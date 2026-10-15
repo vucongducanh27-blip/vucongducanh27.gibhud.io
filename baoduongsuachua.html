@@ -1,0 +1,1271 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QUẢN LÝ BẢO DƯỠNG & SỬA CHỮA - Enterprise Full Edition (>1200 Lines)</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- SweetAlert2 CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <!-- Three.js Library & OrbitControls -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+</head>
+<body class="bg-slate-900 text-slate-100 font-sans antialiased min-h-screen flex flex-col justify-between selection:bg-sky-500 selection:text-white">
+
+    <!-- HEADER NAVIGATION BAR -->
+    <header class="bg-slate-950/95 backdrop-blur border-b border-slate-800 text-white sticky top-0 z-50 shadow-2xl">
+        <div class="max-w-7xl mx-auto px-4 py-3.5 flex flex-col lg:flex-row justify-between items-center gap-3">
+            <div class="flex items-center space-x-3 cursor-pointer" onclick="switchTab('sh-3d')">
+                <div class="bg-gradient-to-tr from-sky-500 via-blue-600 to-indigo-700 p-2.5 rounded-xl text-white text-xl shadow-lg shadow-sky-500/20">
+                    <i class="fa-solid fa-screwdriver-wrench"></i>
+                </div>
+                <div>
+                    <h1 class="text-base font-extrabold tracking-tight bg-gradient-to-r from-sky-400 via-blue-200 to-emerald-300 bg-clip-text text-transparent">QUẢN LÝ BẢO DƯỠNG & SỬA CHỮA</h1>
+                    <p class="text-[11px] text-slate-400">3D SH 160i • Đăng Ký Phân Quyền • Thợ Thật & Quán • Tổng Đài • Chat Báo Giá</p>
+                </div>
+            </div>
+
+            <!-- MAIN TAB MENU -->
+            <nav class="flex flex-wrap gap-1 bg-slate-900 p-1 rounded-xl border border-slate-800 text-xs font-semibold">
+                <button onclick="switchTab('sh-3d')" id="btn-sh-3d" class="px-3 py-1.5 rounded-lg transition bg-sky-600 text-white shadow">🛵 Xe & 3D SH</button>
+                <button onclick="switchTab('tech')" id="btn-tech" class="px-3 py-1.5 rounded-lg transition text-slate-400 hover:text-white">💻 Điện tử</button>
+                <button onclick="switchTab('appliances')" id="btn-appliances" class="px-3 py-1.5 rounded-lg transition text-slate-400 hover:text-white">❄️ Điện lạnh</button>
+                <button onclick="switchTab('map-shops')" id="btn-map-shops" class="px-3 py-1.5 rounded-lg transition text-slate-400 hover:text-white">📍 Thợ Thật & Cửa Hàng</button>
+                <button onclick="switchTab('chat-tab')" id="btn-chat-tab" class="px-3 py-1.5 rounded-lg transition text-slate-400 hover:text-white relative">💬 Chat & Báo Giá</button>
+                <button onclick="switchTab('appointments')" id="btn-appointments" class="px-3 py-1.5 rounded-lg transition text-slate-400 hover:text-white relative">
+                    📅 Lịch Hẹn & Xong
+                    <span id="badge-count" class="absolute -top-1 -right-1 px-1.5 py-0.2 bg-rose-500 text-white rounded-full text-[9px] font-bold hidden">0</span>
+                </button>
+            </nav>
+
+            <!-- AUTHENTICATION & SYSTEM CONTROLS -->
+            <div class="flex items-center space-x-2">
+                <button onclick="openDatabaseModal()" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold rounded-lg border border-slate-700 transition flex items-center space-x-1">
+                    <i class="fa-solid fa-database text-sky-400"></i>
+                    <span>Cơ Sở Dữ Liệu</span>
+                </button>
+                <div id="auth-container" class="flex items-center space-x-2">
+                    <button onclick="openRegisterModal()" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-lg shadow transition flex items-center space-x-1">
+                        <i class="fa-solid fa-user-plus"></i>
+                        <span>Đăng ký tài khoản</span>
+                    </button>
+                    <button onclick="openLoginModal()" class="px-3 py-1.5 bg-sky-600 hover:bg-sky-500 text-white text-xs font-bold rounded-lg shadow transition flex items-center space-x-1">
+                        <i class="fa-solid fa-right-to-bracket"></i>
+                        <span>Đăng nhập</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- MAIN CONTENT AREA -->
+    <main class="max-w-7xl w-full mx-auto px-4 py-6 space-y-6 flex-grow">
+
+        <!-- TAB 1: MÔ HÌNH 3D HONDA SH 160I & BẢO DƯỠNG XE MÁY -->
+        <section id="tab-sh-3d" class="space-y-6">
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <!-- 3D INTERACTIVE VIEWPORT CONTAINER -->
+                <div class="lg:col-span-2 bg-slate-950 rounded-2xl border border-slate-800 p-4 shadow-2xl relative flex flex-col justify-between overflow-hidden">
+                    <div class="flex items-center justify-between z-10 mb-2">
+                        <div class="flex items-center space-x-2">
+                            <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-ping"></span>
+                            <h3 class="text-sm font-bold text-slate-200">Mô Hình 3D Honda SH 160i (Tương tác 360°)</h3>
+                        </div>
+                        <span class="text-[11px] text-slate-400 bg-slate-900 px-2.5 py-1 rounded-full border border-slate-800">
+                            <i class="fa-solid fa-hand-pointer mr-1"></i> Nhấp giữ chuột để xoay 360° • Cuộn chuột để zoom
+                        </span>
+                    </div>
+
+                    <div id="canvas-container" class="w-full h-[420px] rounded-xl overflow-hidden cursor-grab active:cursor-grabbing relative bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950">
+                        <div id="loading-3d" class="absolute inset-0 flex items-center justify-center bg-slate-950/80 text-sky-400 text-xs font-bold">
+                            <i class="fa-solid fa-circle-notch fa-spin text-2xl mr-2"></i> Đang khởi tạo mô hình 3D Honda SH 160i...
+                        </div>
+                    </div>
+
+                    <div class="mt-3 flex flex-col sm:flex-row items-start sm:items-center justify-between text-xs border-t border-slate-800/80 pt-3 gap-2">
+                        <div class="flex items-center space-x-4">
+                            <div>Màu xe hiện tại: <strong id="3d-color-name" class="text-sky-400">Xám Mờ Xi Măng (Phiên bản Đặc Biệt)</strong></div>
+                        </div>
+                        <div class="flex items-center space-x-2">
+                            <button onclick="reset3DCamera()" class="px-3 py-1 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg text-[11px] transition">
+                                <i class="fa-solid fa-arrows-to-dot mr-1"></i> Góc nhìn mặc định
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- CONTROLS & VEHICLE SPECIFICATIONS -->
+                <div class="bg-slate-950 p-6 rounded-2xl border border-slate-800 space-y-6 flex flex-col justify-between">
+                    <div class="space-y-4">
+                        <h4 class="text-xs font-bold text-slate-400 uppercase tracking-wider flex items-center">
+                            <i class="fa-solid fa-palette text-sky-400 mr-2"></i> Tùy Chỉnh Màu Sơn Xe SH 160i
+                        </h4>
+                        <div class="grid grid-cols-2 gap-2.5">
+                            <button onclick="updateSHColor('#475569', 'Xám Mờ Xi Măng', 0.6)" class="p-3 bg-slate-900 border border-slate-800 hover:border-slate-400 rounded-xl flex items-center space-x-2.5 transition group">
+                                <span class="w-4 h-4 rounded-full bg-slate-600 shadow border border-slate-400"></span>
+                                <span class="text-xs text-slate-300 group-hover:text-white">Xám Xi Măng</span>
+                            </button>
+                            <button onclick="updateSHColor('#0f172a', 'Đen Nhám VIP Edition', 0.8)" class="p-3 bg-slate-900 border border-slate-800 hover:border-slate-500 rounded-xl flex items-center space-x-2.5 transition group">
+                                <span class="w-4 h-4 rounded-full bg-slate-950 shadow border border-slate-700"></span>
+                                <span class="text-xs text-slate-300 group-hover:text-white">Đen Nhám VIP</span>
+                            </button>
+                            <button onclick="updateSHColor('#dc2626', 'Đỏ Thể Thao Sport', 0.2)" class="p-3 bg-slate-900 border border-slate-800 hover:border-red-500 rounded-xl flex items-center space-x-2.5 transition group">
+                                <span class="w-4 h-4 rounded-full bg-red-600 shadow border border-red-400"></span>
+                                <span class="text-xs text-slate-300 group-hover:text-white">Đỏ Thể Thao</span>
+                            </button>
+                            <button onclick="updateSHColor('#f8fafc', 'Trắng Ngọc Trai Luxury', 0.1)" class="p-3 bg-slate-900 border border-slate-800 hover:border-white rounded-xl flex items-center space-x-2.5 transition group">
+                                <span class="w-4 h-4 rounded-full bg-slate-100 shadow border border-slate-300"></span>
+                                <span class="text-xs text-slate-300 group-hover:text-white">Trắng Ngọc Trai</span>
+                            </button>
+                        </div>
+
+                        <!-- BẢNG THÔNG SỐ KỸ THUẬT XE SH 160I -->
+                        <div class="bg-slate-900/80 p-4 rounded-xl border border-slate-800 space-y-2 text-xs">
+                            <h5 class="font-bold text-sky-400 border-b border-slate-800 pb-1.5 flex items-center">
+                                <i class="fa-solid fa-circle-info mr-1.5"></i> Thông Số Chuẩn Honda SH 160i
+                            </h5>
+                            <div class="grid grid-cols-2 gap-y-1.5 text-slate-300 pt-1">
+                                <div>• Động cơ: <strong class="text-slate-100">eSP+ 4 van</strong></div>
+                                <div>• Dung tích: <strong class="text-slate-100">156.9 cc</strong></div>
+                                <div>• Hệ thống phanh: <strong class="text-slate-100">ABS 2 kênh</strong></div>
+                                <div>• Dung tích nhớt: <strong class="text-slate-100">0.8 lít</strong></div>
+                                <div>• Bình xăng: <strong class="text-slate-100">7.8 lít</strong></div>
+                                <div>• Trọng lượng: <strong class="text-slate-100">133 kg</strong></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="p-3.5 bg-slate-900 rounded-xl border border-slate-800 text-[11px] text-slate-400 leading-relaxed space-y-1">
+                        <div class="text-emerald-400 font-bold flex items-center"><i class="fa-solid fa-user-gear mr-1"></i> Bạn là thợ sửa chữa chuyên nghiệp?</div>
+                        <p>Hãy chọn <span class="text-sky-400 font-bold">"Đăng ký tài khoản"</span> ở góc trên bên phải ➔ Chọn mục <span class="text-emerald-400 font-bold">"Thợ sửa chữa"</span> để cập nhật tên quán, địa chỉ, tổng đài và kinh nghiệm của bạn lên hệ thống nhé!</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- PHỤ TÙNG XE SH & ĐỀ XUẤT GIÁ BẢO DƯỠNG -->
+            <div class="bg-slate-950 p-6 rounded-2xl border border-slate-800 space-y-4">
+                <div class="flex justify-between items-center border-b border-slate-800 pb-3">
+                    <h3 class="text-base font-bold text-slate-100 flex items-center">
+                        <i class="fa-solid fa-motorcycle text-sky-400 mr-2"></i> Danh Mục Phụ Tùng Xe SH & Chu Kỳ Định Kỳ
+                    </h3>
+                    <button onclick="addNewSHPartModal()" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-sky-400 font-bold text-xs rounded-xl transition border border-slate-700">
+                        <i class="fa-solid fa-plus mr-1"></i> Thêm phụ tùng mới
+                    </button>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4" id="sh-parts-cards"></div>
+            </div>
+        </section>
+
+        <!-- TAB 2: THIẾT BỊ ĐIỆN TỬ -->
+        <section id="tab-tech" class="hidden space-y-6">
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <!-- FORM THÊM THIẾT BỊ ĐIỆN TỬ -->
+                <div class="bg-slate-950 p-6 rounded-2xl border border-slate-800 space-y-4">
+                    <h3 class="text-base font-bold text-slate-100 flex items-center">
+                        <i class="fa-solid fa-laptop text-indigo-400 mr-2"></i> Thêm Thiết Bị Điện Tử Đang Sử Dụng
+                    </h3>
+                    <form onsubmit="addAsset(event, 'Điện tử')" class="space-y-3">
+                        <div>
+                            <label class="block text-slate-400 text-xs mb-1">Tên thiết bị điện tử:</label>
+                            <input type="text" id="t-name" placeholder="VD: MacBook Pro M1 16-inch..." required class="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-200 outline-none focus:border-indigo-500">
+                        </div>
+                        <div>
+                            <label class="block text-slate-400 text-xs mb-1">Hạng mục cần bảo dưỡng:</label>
+                            <input type="text" id="t-part" placeholder="VD: Vệ sinh quạt, Thay pin, Tra keo..." required class="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-200 outline-none focus:border-indigo-500">
+                        </div>
+                        <div class="grid grid-cols-2 gap-2">
+                            <div>
+                                <label class="block text-slate-400 text-xs mb-1">Thời gian đã dùng (Tháng):</label>
+                                <input type="number" id="t-current" placeholder="VD: 10" required class="bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-200 outline-none focus:border-indigo-500 w-full">
+                            </div>
+                            <div>
+                                <label class="block text-slate-400 text-xs mb-1">Hạn định bảo dưỡng (Tháng):</label>
+                                <input type="number" id="t-limit" placeholder="VD: 12" required class="bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-200 outline-none focus:border-indigo-500 w-full">
+                            </div>
+                        </div>
+                        <button type="submit" class="w-full py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-xl text-xs transition shadow-lg">Lưu Thiết Bị Vào Danh Sách</button>
+                    </form>
+                </div>
+
+                <!-- CHẨN ĐOÁN LỖI VÀ TRA CỨU GIÁ CHUẨN (CHỐNG BÍP GIÁ) -->
+                <div class="lg:col-span-2 bg-slate-950 p-6 rounded-2xl border border-slate-800 space-y-4">
+                    <h3 class="text-base font-bold text-slate-100 flex items-center">
+                        <i class="fa-solid fa-stethoscope text-emerald-400 mr-2"></i> Tra Cứu Giá Chuẩn Sửa Chữa Điện Tử (Chống Bíp Giá)
+                    </h3>
+                    <p class="text-xs text-slate-400">Nhấp vào từng triệu chứng sự cố để xem khung giá sàn minh bạch chuẩn nhất thị trường:</p>
+                    
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                        <button onclick="diagnoseTech('Laptop nóng, quạt kêu to sập nguồn', 'Vệ sinh tản nhiệt toàn bộ & Tra keo tản nhiệt MX-4', '150.000 đ - 250.000 đ')" class="p-3 bg-slate-900 border border-slate-800 rounded-xl text-left hover:border-indigo-500 transition space-y-1">
+                            <div class="text-xs font-bold text-slate-200">💻 Laptop nóng, quạt kêu to</div>
+                            <div class="text-[11px] text-emerald-400 font-bold">Giá chuẩn: 150k - 250k</div>
+                        </button>
+                        <button onclick="diagnoseTech('Điện thoại chai pin, sập nguồn đột ngột', 'Thay pin linh kiện chính hãng bảo hành 12 tháng', '350.000 đ - 850.000 đ')" class="p-3 bg-slate-900 border border-slate-800 rounded-xl text-left hover:border-indigo-500 transition space-y-1">
+                            <div class="text-xs font-bold text-slate-200">📱 ĐT hao pin, sập nguồn</div>
+                            <div class="text-[11px] text-emerald-400 font-bold">Giá chuẩn: 350k - 850k</div>
+                        </button>
+                        <button onclick="diagnoseTech('Máy tính chạy chậm, treo đĩa 100%', 'Nâng cấp ổ cứng SSD NVMe + Cài Win bản quyền', '450.000 đ - 750.000 đ')" class="p-3 bg-slate-900 border border-slate-800 rounded-xl text-left hover:border-indigo-500 transition space-y-1">
+                            <div class="text-xs font-bold text-slate-200">💻 Máy tính khởi động chậm</div>
+                            <div class="text-[11px] text-emerald-400 font-bold">Giá chuẩn: 450k - 750k</div>
+                        </button>
+                    </div>
+
+                    <div id="diagnosis-result" class="hidden p-4 bg-emerald-950/40 border border-emerald-800/60 rounded-xl text-xs space-y-1.5"></div>
+                </div>
+            </div>
+
+            <!-- DANH SÁCH THIẾT BỊ ĐIỆN TỬ -->
+            <div class="space-y-3">
+                <h4 class="text-sm font-bold text-slate-200 flex items-center">
+                    <i class="fa-solid fa-list-check text-sky-400 mr-2"></i> Danh Sách Thiết Bị Điện Tử Đang Theo Dõi
+                </h4>
+                <div id="list-tech" class="grid grid-cols-1 md:grid-cols-3 gap-4"></div>
+            </div>
+        </section>
+
+        <!-- TAB 3: ĐỒ ĐIỆN LẠNH -->
+        <section id="tab-appliances" class="hidden space-y-6">
+            <div class="bg-slate-950 p-6 rounded-2xl border border-slate-800 space-y-4">
+                <h3 class="text-base font-bold text-slate-100 flex items-center">
+                    <i class="fa-solid fa-snowflake text-sky-400 mr-2"></i> Quản Lý & Bảo Dưỡng Thiết Bị Điện Lạnh
+                </h3>
+                <form onsubmit="addAsset(event, 'Điện lạnh')" class="grid grid-cols-1 sm:grid-cols-4 gap-3">
+                    <div>
+                        <label class="block text-slate-400 text-xs mb-1">Tên thiết bị:</label>
+                        <input type="text" id="a-name" placeholder="VD: Điều hòa Daikin 12000 BTU..." required class="bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-200 outline-none focus:border-sky-500 w-full">
+                    </div>
+                    <div>
+                        <label class="block text-slate-400 text-xs mb-1">Hạng mục dịch vụ:</label>
+                        <input type="text" id="a-part" placeholder="VD: Xịt rửa lưới lọc, nạp gas R32..." required class="bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-200 outline-none focus:border-sky-500 w-full">
+                    </div>
+                    <div>
+                        <label class="block text-slate-400 text-xs mb-1">Đã dùng (Tháng):</label>
+                        <input type="number" id="a-current" placeholder="VD: 6" required class="bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-200 outline-none focus:border-sky-500 w-full">
+                    </div>
+                    <div>
+                        <label class="block text-slate-400 text-xs mb-1">Giới hạn (Tháng):</label>
+                        <input type="number" id="a-limit" placeholder="VD: 6" required class="bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-200 outline-none focus:border-sky-500 w-full">
+                    </div>
+                    <button type="submit" class="sm:col-span-4 py-2.5 bg-sky-600 hover:bg-sky-500 text-white font-bold rounded-xl text-xs transition shadow-lg">Lưu Thiết Bị Điện Lạnh</button>
+                </form>
+            </div>
+
+            <div class="space-y-3">
+                <h4 class="text-sm font-bold text-slate-200 flex items-center">
+                    <i class="fa-solid fa-list-check text-sky-400 mr-2"></i> Danh Sách Đồ Điện Lạnh Trong Gia Đình
+                </h4>
+                <div id="list-appliances" class="grid grid-cols-1 md:grid-cols-3 gap-4"></div>
+            </div>
+        </section>
+
+        <!-- TAB 4: DANH SÁCH THỢ THẬT & CỬA HÀNG ĐÃ ĐĂNG KÝ -->
+        <section id="tab-map-shops" class="hidden space-y-6">
+            <div class="bg-slate-950 p-6 rounded-2xl border border-slate-800 space-y-4">
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border-b border-slate-800 pb-4">
+                    <div>
+                        <h3 class="text-base font-bold text-slate-100 flex items-center">
+                            <i class="fa-solid fa-store text-emerald-400 mr-2"></i> Danh Sách Cửa Hàng & Thợ Sửa Chữa Đã Xác Minh
+                        </h3>
+                        <p class="text-xs text-slate-400 mt-1">Thông tin chi tiết cửa hàng, hotline tư vấn, địa chỉ và số năm kinh nghiệm thợ.</p>
+                    </div>
+                    
+                    <!-- BỘ LỌC TÌM KIẾM CỬA HÀNG -->
+                    <div class="flex items-center space-x-2 w-full sm:w-auto">
+                        <input type="text" id="shop-search-input" onkeyup="filterShops()" placeholder="Tìm tên tiệm, địa chỉ, thợ..." class="bg-slate-900 border border-slate-800 rounded-xl px-3 py-1.5 text-xs text-slate-200 outline-none focus:border-emerald-500 w-full sm:w-64">
+                        <select id="shop-type-filter" onchange="filterShops()" class="bg-slate-900 border border-slate-800 rounded-xl px-3 py-1.5 text-xs text-slate-200 outline-none focus:border-emerald-500">
+                            <option value="all">Tất cả chuyên môn</option>
+                            <option value="xe">Sửa Xe Máy</option>
+                            <option value="dt">Điện Tử</option>
+                            <option value="dl">Điện Lạnh</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6" id="shops-detailed-grid"></div>
+            </div>
+        </section>
+
+        <!-- TAB 5: CHAT TRỰC TIẾP & BÁO GIÁ THỜI GIAN THỰC -->
+        <section id="tab-chat-tab" class="hidden space-y-6">
+            <div class="bg-slate-950 p-6 rounded-2xl border border-slate-800 space-y-4">
+                <div class="flex justify-between items-center border-b border-slate-800 pb-4">
+                    <div>
+                        <h3 class="text-base font-bold text-slate-100 flex items-center">
+                            <i class="fa-solid fa-comments text-sky-400 mr-2"></i> Trung Tâm Chat Trực Tiếp Với Thợ Thật
+                        </h3>
+                        <p class="text-xs text-slate-400 mt-1">Trò chuyện trực tiếp, yêu cầu hình ảnh kiểm tra và nhận bảng báo giá chi tiết từ thợ.</p>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 h-[580px]">
+                    <!-- DANH SÁCH THỜ KHẢ DỤNG -->
+                    <div class="bg-slate-900 rounded-2xl border border-slate-800 p-3 overflow-y-auto space-y-2" id="chat-shop-list"></div>
+
+                    <!-- KHUNG CHAT CHI TIẾT -->
+                    <div class="lg:col-span-2 bg-slate-900 rounded-2xl border border-slate-800 flex flex-col justify-between p-4">
+                        <div id="chat-header-info" class="flex items-center justify-between border-b border-slate-800 pb-3">
+                            <div class="flex items-center space-x-3">
+                                <div class="w-10 h-10 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center font-bold text-sky-400">
+                                    <i class="fa-solid fa-user-gear"></i>
+                                </div>
+                                <div>
+                                    <h4 id="main-chat-name" class="text-sm font-bold text-slate-100">Chưa chọn thợ sửa chữa</h4>
+                                    <span id="main-chat-sub" class="text-[10px] text-slate-400">Vui lòng chọn một thợ ở danh sách bên trái để trao đổi</span>
+                                </div>
+                            </div>
+                            <div id="chat-header-actions" class="hidden">
+                                <button onclick="quickRequestQuote()" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold transition">
+                                    <i class="fa-solid fa-calculator mr-1"></i> Yêu cầu báo giá ngay
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- CỬA SỔ HIỂN THỊ TIN NHẮN -->
+                        <div id="main-chat-messages" class="flex-grow overflow-y-auto space-y-3 p-3 bg-slate-950 rounded-xl border border-slate-800 text-xs my-3">
+                            <div class="text-center text-slate-500 italic py-24">Hãy bấm chọn một cửa hàng / thợ sửa chữa ở cột bên trái để bắt đầu trò chuyện trực tiếp.</div>
+                        </div>
+
+                        <!-- THANH NHẬP TIN NHẮN & PHÍM TẮT -->
+                        <div class="space-y-2 pt-2 border-t border-slate-800">
+                            <div class="flex items-center space-x-2 overflow-x-auto pb-1 text-[11px]">
+                                <span class="text-slate-400 whitespace-nowrap">Mẫu tin nhanh:</span>
+                                <button onclick="sendQuickText('Cho mình hỏi chi phí vệ sinh nồi xe SH là bao nhiêu?')" class="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg whitespace-nowrap transition">🛵 Vệ sinh nồi SH?</button>
+                                <button onclick="sendQuickText('Laptop mình bị nổ tụ nguồn, tiệm có linh kiện thay không?')" class="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg whitespace-nowrap transition">💻 Lỗi nguồn laptop?</button>
+                                <button onclick="sendQuickText('Điều hòa chảy nước ở dàn lạnh, báo giá giúp mình.')" class="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg whitespace-nowrap transition">❄️ Điều hòa chảy nước?</button>
+                            </div>
+                            <div class="flex items-center space-x-2">
+                                <input type="text" id="main-chat-input" onkeypress="handleKeyPress(event)" placeholder="Nhập tin nhắn trao đổi với thợ..." class="flex-grow bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-xs text-slate-200 outline-none focus:border-sky-500">
+                                <button onclick="sendMainChatMessage()" class="px-5 py-2.5 bg-sky-600 hover:bg-sky-500 text-white font-bold rounded-xl text-xs transition shadow-lg flex items-center space-x-1">
+                                    <i class="fa-solid fa-paper-plane"></i>
+                                    <span>Gửi</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- TAB 6: LỊCH HẸN & THÔNG BÁO HOÀN THÀNH SỬA CHỮA -->
+        <section id="tab-appointments" class="hidden space-y-6">
+            <div class="bg-slate-950 p-6 rounded-2xl border border-slate-800 space-y-4">
+                <div class="flex justify-between items-center border-b border-slate-800 pb-4">
+                    <div>
+                        <h3 class="text-base font-bold text-slate-100 flex items-center">
+                            <i class="fa-solid fa-calendar-check text-sky-400 mr-2"></i> Quản Lý Lịch Hẹn & Tiến Độ Sửa Chữa
+                        </h3>
+                        <p class="text-xs text-slate-400 mt-1">Theo dõi thời gian thực quá trình thợ tiếp nhận và sửa chữa thiết bị của bạn.</p>
+                    </div>
+                    <button onclick="clearAppointments()" class="text-xs text-rose-400 hover:underline flex items-center space-x-1">
+                        <i class="fa-solid fa-trash"></i>
+                        <span>Xóa lịch sử cũ</span>
+                    </button>
+                </div>
+                <div class="space-y-3" id="appointments-list"></div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- MODAL 1: ĐĂNG KÝ TÀI KHOẢN MỚI (PHÂN QUYỀN NGƯỜI DÙNG & THỜ SỬA CHỮA) -->
+    <div id="register-modal" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm hidden flex items-center justify-center p-4">
+        <div class="bg-slate-900 rounded-2xl max-w-lg w-full p-6 border border-slate-800 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">
+            <div class="flex justify-between items-center border-b border-slate-800 pb-3">
+                <h3 class="text-sm font-bold text-emerald-400 flex items-center"><i class="fa-solid fa-user-plus mr-2"></i> Đăng Ký Tài Khoản Mới</h3>
+                <button onclick="closeRegisterModal()" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+
+            <form onsubmit="submitRegister(event)" class="space-y-3.5 text-xs">
+                <!-- MỤC CHỌN VAI TRÒ -->
+                <div>
+                    <label class="block text-slate-300 font-bold mb-1.5">Lựa chọn vai trò tài khoản đăng ký:</label>
+                    <div class="grid grid-cols-2 gap-3">
+                        <label class="p-3 bg-slate-950 border border-slate-800 rounded-xl flex items-center space-x-2.5 cursor-pointer hover:border-emerald-500 transition">
+                            <input type="radio" name="role" value="user" checked onclick="toggleRoleFields('user')" class="accent-emerald-500">
+                            <div>
+                                <div class="font-bold text-slate-100">👤 Người dùng</div>
+                                <div class="text-[10px] text-slate-400">Khách hàng cần dịch vụ sửa chữa</div>
+                            </div>
+                        </label>
+                        <label class="p-3 bg-slate-950 border border-slate-800 rounded-xl flex items-center space-x-2.5 cursor-pointer hover:border-sky-500 transition">
+                            <input type="radio" name="role" value="mechanic" onclick="toggleRoleFields('mechanic')" class="accent-sky-500">
+                            <div>
+                                <div class="font-bold text-slate-100">👨‍🔧 Thợ sửa chữa</div>
+                                <div class="text-[10px] text-slate-400">Đăng quán & Nhận khách trực tiếp</div>
+                            </div>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- TÊN ĐĂNG NHẬP VÀ MẬT KHẨU -->
+                <div class="grid grid-cols-2 gap-2.5 pt-2 border-t border-slate-800">
+                    <div>
+                        <label class="block text-slate-400 mb-1">Tên đăng nhập hệ thống:</label>
+                        <input type="text" id="reg-username" placeholder="VD: ducanh2026" required class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-slate-200 outline-none focus:border-sky-500">
+                    </div>
+                    <div>
+                        <label class="block text-slate-400 mb-1">Mật khẩu bảo mật:</label>
+                        <input type="password" id="reg-password" placeholder="••••••••" required class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-slate-200 outline-none focus:border-sky-500">
+                    </div>
+                </div>
+
+                <!-- THÔNG TIN CÁ NHÂN CƠ BẢN -->
+                <div class="space-y-3 pt-2 border-t border-slate-800">
+                    <h4 class="text-xs font-bold text-sky-400 uppercase tracking-wider">Thông Tin Cá Nhân Cơ Bản</h4>
+                    <div>
+                        <label class="block text-slate-400 mb-1">Họ và tên đầy đủ:</label>
+                        <input type="text" id="reg-fullname" placeholder="VD: Vũ Công Đức Anh" required class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-slate-200 outline-none focus:border-sky-500">
+                    </div>
+                    <div class="grid grid-cols-2 gap-2.5">
+                        <div>
+                            <label class="block text-slate-400 mb-1">Ngày tháng năm sinh:</label>
+                            <input type="date" id="reg-dob" required onchange="calculateAge()" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-slate-200 outline-none focus:border-sky-500">
+                        </div>
+                        <div>
+                            <label class="block text-slate-400 mb-1">Tuổi tác:</label>
+                            <input type="number" id="reg-age" placeholder="Tự động tính..." readonly class="w-full bg-slate-950/60 border border-slate-800 rounded-xl px-3 py-2 text-slate-400 outline-none">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-slate-400 mb-1">Số điện thoại liên hệ cá nhân:</label>
+                        <input type="text" id="reg-phone" placeholder="VD: 0988.123.456" required class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-slate-200 outline-none focus:border-sky-500">
+                    </div>
+                </div>
+
+                <!-- THÔNG TIN MỞ RỘNG (CHỈ DÀNH RIÊNG CHO THỢ SỬA CHỮA) -->
+                <div id="mechanic-extra-fields" class="hidden space-y-3 pt-3 border-t border-slate-800">
+                    <h4 class="text-xs font-bold text-emerald-400 uppercase tracking-wider">Thông Tin Cửa Hàng & Kinh Nghiệm Thợ</h4>
+                    <div>
+                        <label class="block text-slate-400 mb-1">Tên cửa hàng / Tên tiệm sửa chữa:</label>
+                        <input type="text" id="reg-shopname" placeholder="VD: Tiệm Sửa Xe Máy Đức Anh Speed" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-slate-200 outline-none focus:border-emerald-500">
+                    </div>
+                    <div class="grid grid-cols-2 gap-2.5">
+                        <div>
+                            <label class="block text-slate-400 mb-1">Lĩnh vực chuyên môn chính:</label>
+                            <select id="reg-specialty" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-slate-200 outline-none focus:border-emerald-500">
+                                <option value="xe">Sửa Xe Máy / Tay ga Honda SH</option>
+                                <option value="dt">Sửa Laptop & Điện Thoại</option>
+                                <option value="dl">Điện Lạnh (Điều Hòa, Tủ Lạnh)</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-slate-400 mb-1">SĐT Tổng đài tư vấn khách hàng:</label>
+                            <input type="text" id="reg-hotline" placeholder="VD: 1900.8888 hoặc Hotline Quán" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-slate-200 outline-none focus:border-emerald-500">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-slate-400 mb-1">Địa chỉ quán ở đâu (Địa chỉ chi tiết):</label>
+                        <input type="text" id="reg-address" placeholder="VD: Số 125 Đường Nguyễn Trãi, Thanh Xuân, Hà Nội" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-slate-200 outline-none focus:border-emerald-500">
+                    </div>
+                    <div class="grid grid-cols-2 gap-2.5">
+                        <div>
+                            <label class="block text-slate-400 mb-1">Quán đã hoạt động (Số năm):</label>
+                            <input type="number" id="reg-shop-years" placeholder="VD: 5" min="0" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-slate-200 outline-none focus:border-emerald-500">
+                        </div>
+                        <div>
+                            <label class="block text-slate-400 mb-1">Thợ có tay nghề (Số năm):</label>
+                            <input type="number" id="reg-exp-years" placeholder="VD: 10" min="0" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-slate-200 outline-none focus:border-emerald-500">
+                        </div>
+                    </div>
+                </div>
+
+                <button type="submit" class="w-full py-3 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl text-xs transition shadow-lg mt-2">Hoàn Tất Đăng Ký Tài Khoản</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL 2: ĐẶT LỊCH HẸN SỬA CHỮA -->
+    <div id="booking-modal" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm hidden flex items-center justify-center p-4">
+        <div class="bg-slate-900 rounded-2xl max-w-md w-full p-6 border border-slate-800 shadow-2xl space-y-4">
+            <div class="flex justify-between items-center border-b border-slate-800 pb-3">
+                <h3 class="text-sm font-bold text-slate-100 flex items-center"><i class="fa-solid fa-calendar-plus text-sky-400 mr-2"></i> Đặt Lịch Hẹn Sửa Chữa</h3>
+                <button onclick="closeBookingModal()" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <form onsubmit="submitBooking(event)" class="space-y-3 text-xs">
+                <div>
+                    <label class="block text-slate-400 mb-1">Thiết bị / Hạng mục cần sửa:</label>
+                    <input type="text" id="book-item" readonly class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-slate-200 font-bold">
+                </div>
+                <div>
+                    <label class="block text-slate-400 mb-1">Lựa chọn Cửa hàng / Thợ phụ trách:</label>
+                    <select id="book-shop-select" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-slate-200 outline-none focus:border-sky-500"></select>
+                </div>
+                <div class="grid grid-cols-2 gap-2">
+                    <div>
+                        <label class="block text-slate-400 mb-1">Ngày hẹn:</label>
+                        <input type="date" id="book-date" required class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-slate-200 outline-none focus:border-sky-500">
+                    </div>
+                    <div>
+                        <label class="block text-slate-400 mb-1">Khung giờ trống:</label>
+                        <select id="book-time" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-slate-200 outline-none focus:border-sky-500">
+                            <option value="Sáng (08:00 - 11:30)">Sáng (08:00 - 11:30) - Trống</option>
+                            <option value="Chiều (14:00 - 17:30)">Chiều (14:00 - 17:30) - Trống</option>
+                            <option value="Tối (18:30 - 21:00)">Tối (18:30 - 21:00) - Trống</option>
+                        </select>
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-slate-400 mb-1">Ghi chú thêm (Đã thỏa thuận giá với thợ):</label>
+                    <textarea id="book-note" rows="2" placeholder="VD: Đã nhắn tin trao đổi chi phí với thợ..." class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-slate-200 outline-none focus:border-sky-500"></textarea>
+                </div>
+                <button type="submit" class="w-full py-2.5 bg-sky-600 hover:bg-sky-500 text-white font-bold rounded-xl text-xs transition shadow-lg">Xác Nhận Đặt Lịch Sửa Chữa</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL 3: BẢNG DATABASE LƯU TRỮ SYSTEM -->
+    <div id="db-modal" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm hidden flex items-center justify-center p-4">
+        <div class="bg-slate-900 rounded-2xl max-w-3xl w-full p-6 border border-slate-800 shadow-2xl space-y-4 max-h-[85vh] flex flex-col">
+            <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+                <h3 class="text-base font-bold text-slate-100 flex items-center"><i class="fa-solid fa-database text-sky-400 mr-2"></i> Toàn Bộ Cơ Sở Dữ Liệu Dạng JSON</h3>
+                <button onclick="closeDatabaseModal()" class="text-slate-400 hover:text-white text-lg"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="flex-grow overflow-y-auto font-mono text-xs bg-slate-950 text-emerald-400 p-4 rounded-xl border border-slate-800">
+                <pre id="db-json-output" class="whitespace-pre-wrap"></pre>
+            </div>
+            <div class="flex justify-between items-center pt-2 border-t border-slate-800">
+                <button onclick="clearSystemDB()" class="px-3 py-1.5 bg-rose-950 text-rose-400 hover:bg-rose-900 rounded-xl font-bold text-xs transition">Xóa toàn bộ DB làm lại từ đầu</button>
+                <button onclick="closeDatabaseModal()" class="px-5 py-2 bg-slate-800 hover:bg-slate-700 text-white font-bold rounded-xl text-xs">Đóng Bảng Dữ Liệu</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL 4: THÊM PHỤ TÙNG XE SH MỚI -->
+    <div id="add-sh-part-modal" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm hidden flex items-center justify-center p-4">
+        <div class="bg-slate-900 rounded-2xl max-w-md w-full p-6 border border-slate-800 shadow-2xl space-y-4">
+            <div class="flex justify-between items-center border-b border-slate-800 pb-3">
+                <h3 class="text-sm font-bold text-slate-100 flex items-center"><i class="fa-solid fa-plus text-sky-400 mr-2"></i> Thêm Phụ Tùng Xe SH Mới</h3>
+                <button onclick="closeAddSHPartModal()" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <form onsubmit="submitNewSHPart(event)" class="space-y-3 text-xs">
+                <div>
+                    <label class="block text-slate-400 mb-1">Tên phụ tùng xe SH:</label>
+                    <input type="text" id="new-part-name" placeholder="VD: Dây Curoa Bando 2 mặt..." required class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-slate-200 outline-none focus:border-sky-500">
+                </div>
+                <div class="grid grid-cols-2 gap-2">
+                    <div>
+                        <label class="block text-slate-400 mb-1">Số km hiện tại:</label>
+                        <input type="number" id="new-part-current" placeholder="VD: 15000" required class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-slate-200 outline-none focus:border-sky-500">
+                    </div>
+                    <div>
+                        <label class="block text-slate-400 mb-1">Giới hạn thay mới (km):</label>
+                        <input type="number" id="new-part-limit" placeholder="VD: 20000" required class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-slate-200 outline-none focus:border-sky-500">
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-slate-400 mb-1">Giá thay tham khảo:</label>
+                    <input type="text" id="new-part-price" placeholder="VD: 550.000 đ" required class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-slate-200 outline-none focus:border-sky-500">
+                </div>
+                <button type="submit" class="w-full py-2.5 bg-sky-600 hover:bg-sky-500 text-white font-bold rounded-xl text-xs transition shadow-lg">Lưu Phụ Tùng Về Hệ Thống</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- FOOTER -->
+    <footer class="bg-slate-950 border-t border-slate-800 py-4 text-center text-xs text-slate-500 mt-6">
+        <p>&copy; 2026 QUẢN LÝ BẢO DƯỠNG & SỬA CHỮA - Enterprise Edition (>1200 Lines). Tất cả quyền được bảo lưu.</p>
+    </footer>
+
+    <!-- JAVASCRIPT & THREE.JS LOGIC ENGINE -->
+    <script>
+        // --- LOCALSTORAGE INITIALIZATION & STATE MANAGEMENT ---
+        let db = JSON.parse(localStorage.getItem('quanly_baoduong_enterprise_v1000')) || {
+            users: [],
+            currentUser: null,
+            shParts: [
+                { id: 1, name: 'Lốp xe SH (Bánh sau 120/80-16 IRC)', current: 18500, limit: 20000, unit: 'km', price: '750.000 đ' },
+                { id: 2, name: 'Dầu nhớt động cơ Motul 300V 10W40', current: 2800, limit: 3000, unit: 'km', price: '280.000 đ' },
+                { id: 3, name: 'Bộ bi nồi & Dây Curoa Bando', current: 19000, limit: 24000, unit: 'km', price: '650.000 đ' },
+                { id: 4, name: 'Má phanh đĩa trước & sau Nissin', current: 12000, limit: 15000, unit: 'km', price: '320.000 đ' }
+            ],
+            assets: [
+                { id: 101, category: 'Điện tử', name: 'MacBook Pro M1 16-inch', part: 'Vệ sinh quạt & Tra keo tản nhiệt MX-4', current: 10, limit: 12, unit: 'tháng', price: '200.000 đ' },
+                { id: 102, category: 'Điện lạnh', name: 'Điều hòa Daikin Inverter 12000 BTU', part: 'Vệ sinh lưới lọc & Nạp bổ sung Gas R32', current: 6, limit: 6, unit: 'tháng', price: '300.000 đ' }
+            ],
+            shops: [
+                { 
+                    id: 1, name: 'Tiệm Sửa Xe Máy Uy Tín - Thợ Tuấn SH', type: 'xe', 
+                    mechanic: 'Nguyễn Văn Tuấn', age: 38, phone: '0988.123.456', hotline: '1900.8888',
+                    address: 'Số 125 Đường Nguyễn Trãi, Thanh Xuân, Hà Nội', 
+                    shopYears: 10, expYears: 15,
+                    schedule: 'Sáng: Trống (08:00 - 11:30) | Chiều: Trống (14:00 - 18:00)',
+                    desc: 'Chuyên trị bệnh xe tay ga Honda SH, hệ thống phun xăng điện tử Fi, làm nồi xe ga êm ái, bảo hành minh bạch.'
+                },
+                { 
+                    id: 2, name: 'Trung Tâm Sửa Chữa Laptop & ĐT 24h', type: 'dt', 
+                    mechanic: 'Trần Minh Đức', age: 32, phone: '0977.456.789', hotline: '024.3999.8888',
+                    address: 'Số 45 Đường Thái Hà, Đống Đa, Hà Nội', 
+                    shopYears: 6, expYears: 10,
+                    schedule: 'Sáng: Bận | Chiều: Trống (13:30 - 17:00) | Tối: Trống (19:00 - 21:00)',
+                    desc: 'Chuyên vệ sinh laptop, sửa mainboard, ép kính điện thoại, thay thế linh kiện lấy ngay trước mặt khách hàng.'
+                },
+                { 
+                    id: 3, name: 'Điện Lạnh Minh Quân - Chuyên Sửa Điều Hòa', type: 'dl', 
+                    mechanic: 'Lê Hoàng Quân', age: 41, phone: '0933.789.012', hotline: '0933.789.012',
+                    address: 'Khu vực Mẫu Lương, Hà Đông, Hà Nội', 
+                    shopYears: 8, expYears: 12,
+                    schedule: 'Sáng: Trống (08:30 - 11:30) | Chiều: Trống (14:00 - 18:00)',
+                    desc: 'Dịch vụ xịt rửa điều hòa tận nhà, kiểm tra xì gas, sửa tủ lạnh, máy giặt không vắt nhanh chóng.'
+                }
+            ],
+            appointments: [],
+            chats: {}
+        };
+
+        function saveDB() {
+            localStorage.setItem('quanly_baoduong_enterprise_v1000', JSON.stringify(db));
+        }
+
+        // --- THREE.JS 3D ENGINE GRAPHICS FOR HONDA SH 160I ---
+        let scene, camera, renderer, controls, shMainBodyMesh, shFrontMesh, shSeatMesh;
+
+        function init3D() {
+            const container = document.getElementById('canvas-container');
+            if(!container) return;
+
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x020617);
+
+            camera = new THREE.PerspectiveCamera(45, container.clientWidth / container.clientHeight, 0.1, 1000);
+            camera.position.set(3.8, 1.8, 4.5);
+
+            renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+            renderer.setSize(container.clientWidth, container.clientHeight);
+            renderer.setPixelRatio(window.devicePixelRatio);
+            renderer.shadowMap.enabled = true;
+            container.appendChild(renderer.domElement);
+
+            document.getElementById('loading-3d').style.display = 'none';
+
+            controls = new THREE.OrbitControls(camera, renderer.domElement);
+            controls.enableDamping = true;
+            controls.dampingFactor = 0.05;
+            controls.maxPolarAngle = Math.PI / 2 - 0.05;
+
+            // LIGHTS
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.8);
+            scene.add(ambientLight);
+
+            const dirLight = new THREE.DirectionalLight(0xffffff, 1.2);
+            dirLight.position.set(5, 12, 8);
+            dirLight.castShadow = true;
+            scene.add(dirLight);
+
+            const pointLight = new THREE.PointLight(0x38bdf8, 1, 10);
+            pointLight.position.set(-3, 2, -2);
+            scene.add(pointLight);
+
+            // GRID FLOOR
+            const gridHelper = new THREE.GridHelper(15, 30, 0x0284c7, 0x1e293b);
+            gridHelper.position.y = -0.42;
+            scene.add(gridHelper);
+
+            // MODEL GROUP SH 160I
+            const shGroup = new THREE.Group();
+
+            // SƠN THÂN XE SH
+            const bodyGeo = new THREE.BoxGeometry(2.2, 0.75, 0.68);
+            const bodyMat = new THREE.MeshStandardMaterial({ color: 0x475569, roughness: 0.6, metalness: 0.3 });
+            shMainBodyMesh = new THREE.Mesh(bodyGeo, bodyMat);
+            shMainBodyMesh.position.set(0, 0.5, 0);
+            shGroup.add(shMainBodyMesh);
+
+            // ĐẦU XE SH
+            const frontGeo = new THREE.BoxGeometry(0.55, 0.85, 0.7);
+            shFrontMesh = new THREE.Mesh(frontGeo, bodyMat);
+            shFrontMesh.position.set(0.9, 0.72, 0);
+            shGroup.add(shFrontMesh);
+
+            // YÊN XE SH (ĐEN)
+            const seatGeo = new THREE.BoxGeometry(1.25, 0.22, 0.58);
+            const seatMat = new THREE.MeshStandardMaterial({ color: 0x0f172a, roughness: 0.9 });
+            shSeatMesh = new THREE.Mesh(seatGeo, seatMat);
+            shSeatMesh.position.set(-0.2, 0.98, 0);
+            shGroup.add(shSeatMesh);
+
+            // BÁNH XE TRƯỚC VÀ SAU
+            const wheelGeo = new THREE.CylinderGeometry(0.42, 0.42, 0.18, 32);
+            const wheelMat = new THREE.MeshStandardMaterial({ color: 0x020617, roughness: 0.5 });
+            
+            const fw = new THREE.Mesh(wheelGeo, wheelMat);
+            fw.rotation.x = Math.PI / 2;
+            fw.position.set(1.05, 0, 0);
+            shGroup.add(fw);
+
+            const bw = new THREE.Mesh(wheelGeo, wheelMat);
+            bw.rotation.x = Math.PI / 2;
+            bw.position.set(-0.95, 0, 0);
+            shGroup.add(bw);
+
+            scene.add(shGroup);
+
+            // ANIMATION LOOP
+            function animate() {
+                requestAnimationFrame(animate);
+                controls.update();
+                renderer.render(scene, camera);
+            }
+            animate();
+
+            // RESIZE EVENT
+            window.addEventListener('resize', () => {
+                if(!container) return;
+                camera.aspect = container.clientWidth / container.clientHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(container.clientWidth, container.clientHeight);
+            });
+        }
+
+        function updateSHColor(hexColor, name, roughness) {
+            if(shMainBodyMesh && shFrontMesh) {
+                const colorHex = parseInt(hexColor.replace('#', '0x'));
+                shMainBodyMesh.material.color.setHex(colorHex);
+                shMainBodyMesh.material.roughness = roughness;
+                shFrontMesh.material.color.setHex(colorHex);
+                shFrontMesh.material.roughness = roughness;
+            }
+            document.getElementById('3d-color-name').innerText = name;
+        }
+
+        function reset3DCamera() {
+            if(camera && controls) {
+                camera.position.set(3.8, 1.8, 4.5);
+                controls.reset();
+            }
+        }
+
+        // --- DOM INITIALIZATION ---
+        window.addEventListener('DOMContentLoaded', () => {
+            init3D();
+            renderSHParts();
+            renderAssets();
+            renderDetailedShops();
+            renderChatShopList();
+            renderAppointments();
+            updateAuthUI();
+        });
+
+        // --- NAVIGATION TAB SWITCHER ---
+        function switchTab(tabId) {
+            const tabs = ['sh-3d', 'tech', 'appliances', 'map-shops', 'chat-tab', 'appointments'];
+            tabs.forEach(t => {
+                const tabEl = document.getElementById(`tab-${t}`);
+                const btnEl = document.getElementById(`btn-${t}`);
+                if(tabEl) tabEl.classList.add('hidden');
+                if(btnEl) btnEl.className = "px-3 py-1.5 rounded-lg transition text-slate-400 hover:text-white";
+            });
+
+            const activeTab = document.getElementById(`tab-${tabId}`);
+            const activeBtn = document.getElementById(`btn-${tabId}`);
+            if(activeTab) activeTab.classList.remove('hidden');
+            if(activeBtn) activeBtn.className = "px-3 py-1.5 rounded-lg transition bg-sky-600 text-white shadow";
+        }
+
+        // --- REGISTER & AUTHENTICATION LOGIC ---
+        function openRegisterModal() { document.getElementById('register-modal').classList.remove('hidden'); }
+        function closeRegisterModal() { document.getElementById('register-modal').classList.add('hidden'); }
+
+        function toggleRoleFields(role) {
+            const mechanicFields = document.getElementById('mechanic-extra-fields');
+            if(role === 'mechanic') {
+                mechanicFields.classList.remove('hidden');
+                document.getElementById('reg-shopname').setAttribute('required', 'true');
+                document.getElementById('reg-address').setAttribute('required', 'true');
+            } else {
+                mechanicFields.classList.add('hidden');
+                document.getElementById('reg-shopname').removeAttribute('required');
+                document.getElementById('reg-address').removeAttribute('required');
+            }
+        }
+
+        function calculateAge() {
+            const dob = document.getElementById('reg-dob').value;
+            if(dob) {
+                const birthDate = new Date(dob);
+                const ageDifMs = Date.now() - birthDate.getTime();
+                const ageDate = new Date(ageDifMs);
+                document.getElementById('reg-age').value = Math.abs(ageDate.getUTCFullYear() - 1970);
+            }
+        }
+
+        function submitRegister(e) {
+            e.preventDefault();
+            const role = document.querySelector('input[name="role"]:checked').value;
+            const username = document.getElementById('reg-username').value.trim();
+            const fullname = document.getElementById('reg-fullname').value.trim();
+            const dob = document.getElementById('reg-dob').value;
+            const age = document.getElementById('reg-age').value;
+            const phone = document.getElementById('reg-phone').value.trim();
+
+            const newUser = { id: Date.now(), role, username, fullname, dob, age, phone };
+
+            if(role === 'mechanic') {
+                const shopname = document.getElementById('reg-shopname').value.trim();
+                const specialty = document.getElementById('reg-specialty').value;
+                const hotline = document.getElementById('reg-hotline').value.trim() || phone;
+                const address = document.getElementById('reg-address').value.trim();
+                const shopYears = document.getElementById('reg-shop-years').value || 1;
+                const expYears = document.getElementById('reg-exp-years').value || 1;
+
+                newUser.shopInfo = { shopname, specialty, hotline, address, shopYears, expYears };
+
+                // TẠO CỬA HÀNG MỚI ĐƯA VÀO DANH SÁCH HỆ THỐNG
+                const newShop = {
+                    id: Date.now(),
+                    name: shopname,
+                    type: specialty,
+                    mechanic: fullname,
+                    age: age,
+                    phone: phone,
+                    hotline: hotline,
+                    address: address,
+                    shopYears: shopYears,
+                    expYears: expYears,
+                    schedule: 'Sáng: 08:00 - 11:30 | Chiều: 14:00 - 18:00 (Trống)',
+                    desc: `Quán hoạt động ${shopYears} năm. Thợ ${fullname} (${age} tuổi) có ${expYears} năm kinh nghiệm tay nghề chuyên sâu.`
+                };
+                db.shops.unshift(newShop);
+            }
+
+            db.users.push(newUser);
+            db.currentUser = newUser;
+            saveDB();
+
+            closeRegisterModal();
+            updateAuthUI();
+            renderDetailedShops();
+            renderChatShopList();
+
+            Swal.fire({
+                title: 'Đăng Ký Thành Công!',
+                text: `Chào mừng ${role === 'mechanic' ? 'Thợ' : 'Người dùng'} ${fullname} đã tham gia hệ thống!`,
+                icon: 'success',
+                confirmButtonColor: '#0284c7'
+            });
+        }
+
+        function openLoginModal() {
+            Swal.fire({
+                title: 'Đăng Nhập Hệ Thống',
+                html: '<input id="sw-user" class="swal2-input !m-2 !w-3/4 !text-xs" placeholder="Tên đăng nhập"><input id="sw-pass" type="password" class="swal2-input !m-2 !w-3/4 !text-xs" placeholder="Mật khẩu">',
+                confirmButtonText: 'Đăng nhập',
+                confirmButtonColor: '#0284c7'
+            }).then(res => {
+                const u = document.getElementById('sw-user').value.trim();
+                if(u) { 
+                    db.currentUser = { username: u, fullname: u }; 
+                    saveDB(); 
+                    updateAuthUI(); 
+                    Swal.fire('Thành công', `Xin chào ${u}!`, 'success'); 
+                }
+            });
+        }
+
+        function updateAuthUI() {
+            const container = document.getElementById('auth-container');
+            if(db.currentUser) {
+                container.innerHTML = `
+                    <div class="flex items-center space-x-2">
+                        <span class="px-3 py-1.5 bg-slate-800 text-emerald-400 font-bold rounded-lg text-xs border border-slate-700">
+                            👤 ${db.currentUser.fullname || db.currentUser.username} (${db.currentUser.role === 'mechanic' ? 'Thợ' : 'Khách'})
+                        </span>
+                        <button onclick="logout()" class="px-2.5 py-1.5 bg-rose-900/60 hover:bg-rose-800 text-rose-300 rounded-lg text-xs font-bold transition">Đăng xuất</button>
+                    </div>
+                `;
+            }
+        }
+
+        function logout() {
+            db.currentUser = null;
+            saveDB();
+            location.reload();
+        }
+
+        // --- RENDER PARTS & ASSETS MANAGEMENT ---
+        function renderSHParts() {
+            const container = document.getElementById('sh-parts-cards');
+            container.innerHTML = db.shParts.map(item => `
+                <div class="bg-slate-900 p-4 rounded-2xl border border-slate-800 space-y-3 flex flex-col justify-between">
+                    <div class="space-y-1.5">
+                        <div class="flex justify-between items-start">
+                            <h4 class="text-sm font-bold text-slate-100">${item.name}</h4>
+                            <button onclick="deleteSHPart(${item.id})" class="text-rose-400 text-xs hover:text-rose-300"><i class="fa-solid fa-trash"></i></button>
+                        </div>
+                        <div class="text-xs text-slate-400">Đã đi: <strong class="text-slate-200">${item.current.toLocaleString()} / ${item.limit.toLocaleString()} ${item.unit}</strong></div>
+                        <div class="w-full bg-slate-950 rounded-full h-2 overflow-hidden border border-slate-800">
+                            <div class="bg-sky-500 h-2 rounded-full" style="width: ${Math.min(100, (item.current / item.limit) * 100)}%"></div>
+                        </div>
+                        <div class="text-emerald-400 text-xs font-bold">Giá tham khảo: ${item.price}</div>
+                    </div>
+                    <div class="pt-2 border-t border-slate-800 flex justify-between items-center">
+                        <button onclick="openBookingModal('${item.name}', 'xe')" class="px-3 py-1.5 bg-sky-600 hover:bg-sky-500 text-white font-bold rounded-xl text-xs transition"><i class="fa-solid fa-calendar-plus mr-1"></i> Đặt lịch sửa</button>
+                        <button onclick="resetSH(${item.id})" class="text-xs text-sky-400 hover:underline">Đã thay mới</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function resetSH(id) {
+            const item = db.shParts.find(p => p.id === id);
+            if(item) { item.current = 0; saveDB(); renderSHParts(); Swal.fire('Thành công', 'Đã reset chu kỳ phụ tùng!', 'success'); }
+        }
+
+        function deleteSHPart(id) {
+            db.shParts = db.shParts.filter(p => p.id !== id);
+            saveDB(); renderSHParts();
+        }
+
+        function addNewSHPartModal() { document.getElementById('add-sh-part-modal').classList.remove('hidden'); }
+        function closeAddSHPartModal() { document.getElementById('add-sh-part-modal').classList.add('hidden'); }
+
+        function submitNewSHPart(e) {
+            e.preventDefault();
+            const name = document.getElementById('new-part-name').value;
+            const current = Number(document.getElementById('new-part-current').value);
+            const limit = Number(document.getElementById('new-part-limit').value);
+            const price = document.getElementById('new-part-price').value;
+
+            db.shParts.push({ id: Date.now(), name, current, limit, unit: 'km', price });
+            saveDB(); renderSHParts(); closeAddSHPartModal(); e.target.reset();
+            Swal.fire('Thành công', 'Đã thêm phụ tùng mới!', 'success');
+        }
+
+        function renderAssets() {
+            const renderList = (cat, containerId) => {
+                const container = document.getElementById(containerId);
+                const items = db.assets.filter(a => a.category === cat);
+                if(items.length === 0) { container.innerHTML = `<div class="col-span-full p-4 text-center text-slate-500 text-xs italic">Chưa có thiết bị nào.</div>`; return; }
+                container.innerHTML = items.map(a => `
+                    <div class="bg-slate-900 p-4 rounded-2xl border border-slate-800 space-y-2 text-xs">
+                        <div class="flex justify-between font-bold text-slate-100"><span>${a.name}</span><button onclick="deleteAsset(${a.id})" class="text-rose-400"><i class="fa-solid fa-trash"></i></button></div>
+                        <div class="text-sky-400">${a.part}</div>
+                        <div class="text-slate-400">Đã dùng: ${a.current} / ${a.limit} ${a.unit}</div>
+                        <div class="text-emerald-400 font-bold">Giá chuẩn: ${a.price}</div>
+                        <div class="pt-2 border-t border-slate-800 flex justify-between items-center">
+                            <button onclick="openBookingModal('${a.name} - ${a.part}', '${cat === 'Điện tử' ? 'dt' : 'dl'}')" class="px-3 py-1.5 bg-sky-600 hover:bg-sky-500 text-white font-bold rounded-xl text-xs transition"><i class="fa-solid fa-calendar-plus mr-1"></i> Đặt lịch hẹn</button>
+                        </div>
+                    </div>
+                `).join('');
+            };
+            renderList('Điện tử', 'list-tech');
+            renderList('Điện lạnh', 'list-appliances');
+        }
+
+        function addAsset(e, category) {
+            e.preventDefault();
+            let name, part, current, limit;
+            if(category === 'Điện tử') {
+                name = document.getElementById('t-name').value;
+                part = document.getElementById('t-part').value;
+                current = Number(document.getElementById('t-current').value);
+                limit = Number(document.getElementById('t-limit').value);
+            } else {
+                name = document.getElementById('a-name').value;
+                part = document.getElementById('a-part').value;
+                current = Number(document.getElementById('a-current').value);
+                limit = Number(document.getElementById('a-limit').value);
+            }
+            db.assets.push({ id: Date.now(), category, name, part, current, limit, unit: 'tháng', price: '250.000 đ' });
+            saveDB(); renderAssets(); e.target.reset();
+            Swal.fire('Thành công', 'Đã lưu thiết bị vào danh sách!', 'success');
+        }
+
+        function deleteAsset(id) {
+            db.assets = db.assets.filter(a => a.id !== id);
+            saveDB(); renderAssets();
+        }
+
+        function diagnoseTech(issue, solution, price) {
+            const box = document.getElementById('diagnosis-result');
+            box.classList.remove('hidden');
+            box.innerHTML = `
+                <div><strong class="text-slate-200">Triệu chứng:</strong> ${issue}</div>
+                <div><strong class="text-slate-200">Giải pháp xử lý:</strong> ${solution}</div>
+                <div class="text-emerald-400 font-bold mt-1">💰 Khung giá chuẩn: ${price}</div>
+            `;
+        }
+
+        // --- RENDER SHOPS & FILTER LOGIC ---
+        function renderDetailedShops(filteredList = null) {
+            const container = document.getElementById('shops-detailed-grid');
+            const list = filteredList || db.shops;
+
+            if(list.length === 0) {
+                container.innerHTML = `<div class="col-span-full text-center text-slate-500 text-xs italic py-10">Không tìm thấy cửa hàng nào phù hợp.</div>`;
+                return;
+            }
+
+            container.innerHTML = list.map(s => `
+                <div class="bg-slate-900 p-5 rounded-2xl border border-slate-800 space-y-4 flex flex-col justify-between hover:border-slate-700 transition">
+                    <div class="space-y-3">
+                        <div class="flex justify-between items-start">
+                            <h4 class="text-sm font-bold text-slate-100">${s.name}</h4>
+                            <span class="text-[10px] bg-emerald-950 text-emerald-400 px-2 py-0.5 rounded-full border border-emerald-800 font-bold">Hoạt động ${s.shopYears} năm</span>
+                        </div>
+                        
+                        <div class="bg-slate-950 p-3 rounded-xl border border-slate-800/80 space-y-1.5 text-xs">
+                            <div class="text-sky-400 font-bold"><i class="fa-solid fa-location-dot mr-1"></i> ${s.address}</div>
+                            <div class="text-slate-300"><i class="fa-solid fa-headset mr-1 text-emerald-400"></i> Tổng đài tư vấn: <strong class="text-emerald-400">${s.hotline}</strong></div>
+                            <div class="text-slate-400"><i class="fa-solid fa-phone mr-1"></i> SĐT cá nhân thợ: <strong class="text-slate-200">${s.phone}</strong></div>
+                            <p class="text-slate-300 italic pt-1">${s.desc}</p>
+                        </div>
+
+                        <div class="bg-indigo-950/30 p-3 rounded-xl border border-indigo-900/40 space-y-1 text-xs">
+                            <div class="font-bold text-indigo-300 flex items-center"><i class="fa-solid fa-user-gear mr-1.5 text-indigo-400"></i> Thợ chính: ${s.mechanic} (${s.age} tuổi)</div>
+                            <div class="text-emerald-400 font-semibold"><i class="fa-solid fa-award mr-1"></i> Tay nghề kinh nghiệm: ${s.expYears} năm</div>
+                        </div>
+
+                        <div class="bg-emerald-950/30 p-3 rounded-xl border border-emerald-900/40 space-y-1 text-xs">
+                            <div class="font-bold text-emerald-300 flex items-center"><i class="fa-solid fa-calendar-days mr-1.5 text-emerald-400"></i> Khung giờ nhận việc:</div>
+                            <div class="text-slate-200 font-medium">${s.schedule}</div>
+                        </div>
+                    </div>
+
+                    <div class="pt-3 border-t border-slate-800 flex justify-between gap-2">
+                        <button onclick="switchToChat(${s.id})" class="flex-1 py-2 bg-slate-800 hover:bg-slate-700 text-sky-400 font-bold rounded-xl text-xs transition text-center"><i class="fa-solid fa-comments mr-1"></i> Chat trực tiếp</button>
+                        <button onclick="openBookingModal('${s.name}', '${s.type}')" class="flex-1 py-2 bg-sky-600 hover:bg-sky-500 text-white font-bold rounded-xl text-xs transition text-center"><i class="fa-solid fa-calendar-check mr-1"></i> Đặt lịch</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function filterShops() {
+            const query = document.getElementById('shop-search-input').value.toLowerCase().trim();
+            const type = document.getElementById('shop-type-filter').value;
+
+            const filtered = db.shops.filter(s => {
+                const matchQuery = s.name.toLowerCase().includes(query) || s.address.toLowerCase().includes(query) || s.mechanic.toLowerCase().includes(query);
+                const matchType = type === 'all' || s.type === type;
+                return matchQuery && matchType;
+            });
+
+            renderDetailedShops(filtered);
+        }
+
+        // --- REALTIME CHAT SYSTEM WITH REAL MECHANICS ---
+        let currentChatShopId = null;
+
+        function renderChatShopList() {
+            const container = document.getElementById('chat-shop-list');
+            container.innerHTML = db.shops.map(s => `
+                <div onclick="selectChatShop(${s.id})" id="shop-chat-card-${s.id}" class="p-3 bg-slate-950 border border-slate-800 hover:border-sky-500 rounded-xl cursor-pointer transition space-y-1">
+                    <div class="font-bold text-xs text-slate-200">${s.name}</div>
+                    <div class="text-[10px] text-indigo-300 font-medium"><i class="fa-solid fa-user-gear mr-1"></i> Thợ: ${s.mechanic} (${s.expYears} năm KN)</div>
+                    <div class="text-[10px] text-emerald-400"><i class="fa-solid fa-headset mr-1"></i> Hotline: ${s.hotline}</div>
+                </div>
+            `).join('');
+        }
+
+        function switchToChat(shopId) {
+            switchTab('chat-tab');
+            selectChatShop(shopId);
+        }
+
+        function selectChatShop(shopId) {
+            currentChatShopId = shopId;
+            const shop = db.shops.find(s => s.id === shopId);
+            
+            db.shops.forEach(s => {
+                const card = document.getElementById(`shop-chat-card-${s.id}`);
+                if(card) card.className = s.id === shopId ? "p-3 bg-sky-950/60 border border-sky-500 rounded-xl cursor-pointer transition space-y-1" : "p-3 bg-slate-950 border border-slate-800 hover:border-sky-500 rounded-xl cursor-pointer transition space-y-1";
+            });
+
+            document.getElementById('main-chat-name').innerText = shop.name + ' - ' + shop.mechanic;
+            document.getElementById('main-chat-sub').innerText = `Hotline: ${shop.hotline} | Tay nghề: ${shop.expYears} năm kinh nghiệm | Lịch: ${shop.schedule}`;
+            document.getElementById('chat-header-actions').classList.remove('hidden');
+            renderMainChatMessages();
+        }
+
+        function renderMainChatMessages() {
+            const container = document.getElementById('main-chat-messages');
+            if(!currentChatShopId) return;
+
+            if(!db.chats[currentChatShopId]) {
+                const shop = db.shops.find(s => s.id === currentChatShopId);
+                db.chats[currentChatShopId] = [
+                    { sender: 'shop', text: `Xin chào! Tôi là thợ ${shop.mechanic} (${shop.expYears} năm kinh nghiệm) tại ${shop.name}. Bạn cần tư vấn hoặc báo giá trực tiếp thiết bị gì ạ?` }
+                ];
+            }
+
+            container.innerHTML = db.chats[currentChatShopId].map(m => `
+                <div class="flex ${m.sender === 'user' ? 'justify-end' : 'justify-start'}">
+                    <div class="max-w-[80%] p-3 rounded-xl ${m.sender === 'user' ? 'bg-sky-600 text-white' : 'bg-slate-900 border border-slate-800 text-slate-200'}">${m.text}</div>
+                </div>
+            `).join('');
+            container.scrollTop = container.scrollHeight;
+        }
+
+        function handleKeyPress(e) { if(e.key === 'Enter') sendMainChatMessage(); }
+        function sendQuickText(text) { document.getElementById('main-chat-input').value = text; sendMainChatMessage(); }
+
+        function sendMainChatMessage() {
+            if(!currentChatShopId) {
+                Swal.fire('Lưu ý', 'Vui lòng chọn thợ ở danh sách bên trái trước!', 'warning');
+                return;
+            }
+            const input = document.getElementById('main-chat-input');
+            const text = input.value.trim();
+            if(!text) return;
+
+            db.chats[currentChatShopId].push({ sender: 'user', text });
+            input.value = '';
+            renderMainChatMessages();
+
+            // MÔ PHỎNG PHẢN HỒI THỜI GIAN THỰC TỪ THỜ THẬT
+            setTimeout(() => {
+                const shop = db.shops.find(s => s.id === currentChatShopId);
+                db.chats[currentChatShopId].push({ 
+                    sender: 'shop', 
+                    text: `Dạ tôi đã đọc yêu cầu "${text}". Tiệm ${shop.name} sẽ kiểm tra và báo giá cụ thể cho anh/chị. Mời anh/chị gọi hotline ${shop.hotline} hoặc chốt lịch hẹn sửa nhé!` 
+                });
+                saveDB();
+                renderMainChatMessages();
+            }, 1000);
+        }
+
+        function quickRequestQuote() {
+            if(!currentChatShopId) return;
+            const shop = db.shops.find(s => s.id === currentChatShopId);
+            db.chats[currentChatShopId].push({ sender: 'user', text: 'Báo giá dịch vụ chi tiết giúp mình.' });
+            renderMainChatMessages();
+
+            setTimeout(() => {
+                db.chats[currentChatShopId].push({ 
+                    sender: 'shop', 
+                    text: `📊 BẢNG BÁO GIÁ DỊCH VỤ SƠ BỘ:\n• Công kiểm tra chẩn đoán: Miễn phí 100%\n• Vật tư thay thế: Chuẩn giá niêm yết\n• Thời gian bảo hành: Từ 6 đến 12 tháng.\nAnh/chị đồng ý có thể bấm đặt lịch hẹn ngay!` 
+                });
+                saveDB();
+                renderMainChatMessages();
+            }, 800);
+        }
+
+        // --- BOOKING & APPOINTMENT SCHEDULER ---
+        function openBookingModal(itemName, shopType) {
+            document.getElementById('book-item').value = itemName;
+            const select = document.getElementById('book-shop-select');
+            const filteredShops = db.shops.filter(s => shopType === 'all' || s.type === shopType);
+            select.innerHTML = filteredShops.map(s => `<option value="${s.name} (Thợ: ${s.mechanic})">${s.name} - Thợ: ${s.mechanic} (${s.address})</option>`).join('');
+            document.getElementById('booking-modal').classList.remove('hidden');
+        }
+
+        function closeBookingModal() { document.getElementById('booking-modal').classList.add('hidden'); }
+
+        function submitBooking(e) {
+            e.preventDefault();
+            const newApp = {
+                id: Date.now(),
+                item: document.getElementById('book-item').value,
+                shop: document.getElementById('book-shop-select').value,
+                date: document.getElementById('book-date').value,
+                time: document.getElementById('book-time').value,
+                note: document.getElementById('book-note').value,
+                status: 'Đang chờ thợ tiếp nhận'
+            };
+            db.appointments.unshift(newApp);
+            saveDB();
+            closeBookingModal();
+            renderAppointments();
+            Swal.fire('Thành công', 'Đã đặt lịch hẹn sửa chữa thành công!', 'success');
+        }
+
+        function renderAppointments() {
+            const container = document.getElementById('appointments-list');
+            const badge = document.getElementById('badge-count');
+            
+            if(db.appointments.length === 0) {
+                container.innerHTML = `<div class="p-6 text-center text-slate-500 text-xs italic">Chưa có lịch hẹn sửa chữa nào.</div>`;
+                badge.classList.add('hidden');
+                return;
+            }
+
+            const doneCount = db.appointments.filter(a => a.status === 'Đã sửa xong').length;
+            badge.innerText = doneCount || '';
+            if(doneCount > 0) badge.classList.remove('hidden'); else badge.classList.add('hidden');
+
+            container.innerHTML = db.appointments.map(a => {
+                let badgeColor = 'bg-amber-950 text-amber-400 border-amber-800';
+                if(a.status === 'Đang thợ sửa') badgeColor = 'bg-sky-950 text-sky-400 border-sky-800';
+                if(a.status === 'Đã sửa xong') badgeColor = 'bg-emerald-950 text-emerald-400 border-emerald-800 animate-pulse';
+
+                return `
+                    <div class="bg-slate-900 p-4 rounded-2xl border border-slate-800 space-y-2 text-xs flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+                        <div class="space-y-1">
+                            <div class="flex items-center space-x-2">
+                                <h4 class="font-bold text-slate-100 text-sm">${a.item}</h4>
+                                <span class="px-2 py-0.5 rounded-full border text-[10px] font-bold ${badgeColor}">${a.status}</span>
+                            </div>
+                            <p class="text-sky-400"><i class="fa-solid fa-shop mr-1"></i> ${a.shop}</p>
+                            <p class="text-slate-400"><i class="fa-solid fa-calendar mr-1"></i> Lịch hẹn: ${a.date} - ${a.time}</p>
+                            ${a.note ? `<p class="text-slate-300 italic">Ghi chú: "${a.note}"</p>` : ''}
+                        </div>
+                        <div class="flex items-center space-x-2">
+                            ${a.status !== 'Đã sửa xong' ? `
+                                <button onclick="simulateMechanicProgress(${a.id})" class="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl font-bold transition">Mô phỏng thợ làm</button>
+                            ` : `
+                                <span class="text-emerald-400 font-bold"><i class="fa-solid fa-circle-check mr-1"></i> Đã hoàn thành</span>
+                                <button onclick="deleteAppointment(${a.id})" class="text-rose-400 ml-2"><i class="fa-solid fa-trash"></i></button>
+                            `}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function simulateMechanicProgress(id) {
+            const app = db.appointments.find(a => a.id === id);
+            if(!app) return;
+
+            if(app.status === 'Đang chờ thợ tiếp nhận') {
+                app.status = 'Đang thợ sửa';
+                saveDB(); renderAppointments();
+                Swal.fire('Thông báo', 'Thợ đã tiếp nhận thiết bị và đang bắt đầu sửa chữa!', 'info');
+            } else if(app.status === 'Đang thợ sửa') {
+                app.status = 'Đã sửa xong';
+                saveDB(); renderAppointments();
+                Swal.fire({
+                    title: '🎉 Đã Sửa Xong!',
+                    text: `Thiết bị [${app.item}] tại ${app.shop} đã được thợ sửa chữa hoàn tất. Mời bạn ghé tiệm nhận lại thiết bị!`,
+                    icon: 'success',
+                    confirmButtonText: 'Tuyệt vời!'
+                });
+            }
+        }
+
+        function clearAppointments() {
+            db.appointments = [];
+            saveDB(); renderAppointments();
+        }
+
+        function deleteAppointment(id) {
+            db.appointments = db.appointments.filter(a => a.id !== id);
+            saveDB(); renderAppointments();
+        }
+
+        // --- DATABASE MODAL & INSPECTOR ---
+        function openDatabaseModal() {
+            document.getElementById('db-json-output').innerText = JSON.stringify(db, null, 2);
+            document.getElementById('db-modal').classList.remove('hidden');
+        }
+        function closeDatabaseModal() { document.getElementById('db-modal').classList.add('hidden'); }
+
+        function clearSystemDB() {
+            Swal.fire({
+                title: 'Xóa dữ liệu?',
+                text: 'Hành động này sẽ làm sạch dữ liệu hệ thống!',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonText: 'Xóa ngay',
+                cancelButtonText: 'Hủy'
+            }).then(r => {
+                if(r.isConfirmed) {
+                    localStorage.removeItem('quanly_baoduong_enterprise_v1000');
+                    location.reload();
+                }
+            });
+        }
+    </script>
+</body>
+</html>
