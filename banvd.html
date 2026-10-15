@@ -1,0 +1,1731 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RailExpress - Hệ Thống Đặt Vé Tàu Thông Minh</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        rail: {
+                            50: '#f0f9ff',
+                            100: '#e0f2fe',
+                            500: '#0284c7',
+                            600: '#0284c7',
+                            700: '#0369a1',
+                            800: '#075985',
+                            900: '#0c4a6e',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- FontAwesome & Lucide Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- SweetAlert2 for polished notifications -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <!-- QRCode JS -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: #f8fafc;
+        }
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f5f9;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+        .carriage-active {
+            border-color: #0284c7 !important;
+            background-color: #f0f9ff !important;
+        }
+    </style>
+</head>
+<body class="text-slate-800 antialiased min-h-screen flex flex-col justify-between">
+
+    <!-- TOP HEADER / NAVBAR -->
+    <header class="sticky top-0 z-40 bg-white/95 backdrop-blur border-b border-slate-200 shadow-sm">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <!-- Logo -->
+            <div class="flex items-center space-x-3 cursor-pointer" onclick="switchTab('search-tab')">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-sky-600 to-blue-800 flex items-center justify-center text-white shadow-md shadow-sky-200">
+                    <i class="fa-solid fa-train-subway text-xl"></i>
+                </div>
+                <div>
+                    <span class="text-xl font-extrabold bg-gradient-to-r from-sky-700 to-blue-900 bg-clip-text text-transparent">RailExpress</span>
+                    <span class="hidden sm:inline-block text-xs text-sky-600 font-semibold bg-sky-50 px-2 py-0.5 rounded-full ml-1 border border-sky-100">Smart Booking</span>
+                </div>
+            </div>
+
+            <!-- Navigation Links -->
+            <nav class="hidden md:flex items-center space-x-1">
+                <button onclick="switchTab('search-tab')" id="nav-search" class="px-4 py-2 rounded-lg text-sm font-semibold text-sky-700 bg-sky-50 transition">
+                    <i class="fa-solid fa-compass mr-1.5"></i> Tìm chuyến
+                </button>
+                <button onclick="switchTab('tracker-tab')" id="nav-tracker" class="px-4 py-2 rounded-lg text-sm font-semibold text-slate-600 hover:text-sky-700 hover:bg-slate-50 transition">
+                    <i class="fa-solid fa-satellite-dish mr-1.5 animate-pulse text-sky-600"></i> Định vị & ETA
+                </button>
+                <button onclick="switchTab('tickets-tab')" id="nav-tickets" class="px-4 py-2 rounded-lg text-sm font-semibold text-slate-600 hover:text-sky-700 hover:bg-slate-50 transition">
+                    <i class="fa-solid fa-ticket mr-1.5"></i> Vé của tôi
+                    <span id="badge-ticket-count" class="hidden ml-1 px-1.5 py-0.5 text-xs bg-sky-600 text-white rounded-full">0</span>
+                </button>
+                <button onclick="switchTab('history-tab')" id="nav-history" class="px-4 py-2 rounded-lg text-sm font-semibold text-slate-600 hover:text-sky-700 hover:bg-slate-50 transition">
+                    <i class="fa-solid fa-clock-rotate-left mr-1.5"></i> Lịch sử chuyến đi
+                </button>
+            </nav>
+
+            <!-- User Profile / Auth Button -->
+            <div class="flex items-center space-x-3">
+                <div id="auth-status-container">
+                    <!-- Dynamic rendering by JS -->
+                    <button onclick="openAuthModal('login')" class="px-4 py-2 rounded-lg text-sm font-semibold text-white bg-sky-600 hover:bg-sky-700 shadow-sm transition">
+                        Đăng nhập / Đăng ký
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- MAIN CONTENT AREA -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex-grow w-full">
+
+        <!-- TAB 1: SEARCH & BOOKING ENGINE -->
+        <section id="search-tab" class="tab-content space-y-6">
+            
+            <!-- Personalization Banner (Show if user logged in) -->
+            <div id="personalized-welcome" class="hidden bg-gradient-to-r from-sky-900 via-sky-800 to-blue-900 rounded-2xl p-6 text-white shadow-lg relative overflow-hidden">
+                <div class="absolute -right-10 -bottom-10 opacity-10 text-9xl">
+                    <i class="fa-solid fa-train"></i>
+                </div>
+                <div class="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    <div>
+                        <div class="inline-flex items-center space-x-1 text-xs font-semibold uppercase tracking-wider text-sky-300 mb-1">
+                            <i class="fa-solid fa-wand-magic-sparkles"></i>
+                            <span>Gợi ý thông minh cho bạn</span>
+                        </div>
+                        <h2 class="text-xl md:text-2xl font-bold">Xin chào, <span id="user-display-name">Hành khách</span>! 👋</h2>
+                        <p id="user-frequent-route-text" class="text-sky-200 text-sm mt-1">
+                            Hệ thống ghi nhận tuyến đường thường đi của bạn: <strong class="text-white">Hà Nội ➔ Sài Gòn</strong>. Đặt lại chỉ với 1-click!
+                        </p>
+                    </div>
+                    <button onclick="quickBookFrequent()" class="whitespace-nowrap px-5 py-2.5 bg-amber-400 hover:bg-amber-300 text-slate-900 font-bold rounded-xl text-sm shadow-md transition transform hover:-translate-y-0.5">
+                        <i class="fa-solid fa-bolt mr-1"></i> Tìm nhanh tuyến quen thuộc
+                    </button>
+                </div>
+            </div>
+
+            <!-- Search Form Card -->
+            <div class="bg-white rounded-2xl p-6 shadow-md border border-slate-100">
+                <form id="search-form" onsubmit="handleSearch(event)" class="space-y-4">
+                    <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                        <!-- Ga Đi -->
+                        <div class="relative">
+                            <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Ga đi</label>
+                            <div class="relative">
+                                <i class="fa-solid fa-location-dot absolute left-3 top-3.5 text-sky-600"></i>
+                                <select id="search-from" class="w-full pl-9 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold focus:ring-2 focus:ring-sky-500 focus:bg-white outline-none">
+                                    <option value="Hà Nội">Hà Nội (HNO)</option>
+                                    <option value="Phủ Lý">Phủ Lý (PLY)</option>
+                                    <option value="Nam Định">Nam Định (NDI)</option>
+                                    <option value="Thanh Hóa">Thanh Hóa (THA)</option>
+                                    <option value="Vinh">Vinh (VII)</option>
+                                    <option value="Đà Nẵng">Đà Nẵng (DAN)</option>
+                                    <option value="Nha Trang">Nha Trang (NTR)</option>
+                                    <option value="Sài Gòn">Sài Gòn (SGO)</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- Swap Button & Ga Đến -->
+                        <div class="relative">
+                            <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Ga đến</label>
+                            <div class="relative">
+                                <i class="fa-solid fa-flag-checkered absolute left-3 top-3.5 text-amber-500"></i>
+                                <select id="search-to" class="w-full pl-9 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold focus:ring-2 focus:ring-sky-500 focus:bg-white outline-none">
+                                    <option value="Sài Gòn">Sài Gòn (SGO)</option>
+                                    <option value="Nha Trang">Nha Trang (NTR)</option>
+                                    <option value="Đà Nẵng">Đà Nẵng (DAN)</option>
+                                    <option value="Vinh">Vinh (VII)</option>
+                                    <option value="Thanh Hóa">Thanh Hóa (THA)</option>
+                                    <option value="Nam Định">Nam Định (NDI)</option>
+                                    <option value="Phủ Lý">Phủ Lý (PLY)</option>
+                                    <option value="Hà Nội">Hà Nội (HNO)</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- Ngày Đi -->
+                        <div>
+                            <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Ngày đi</label>
+                            <div class="relative">
+                                <i class="fa-solid fa-calendar-days absolute left-3 top-3.5 text-slate-400"></i>
+                                <input type="date" id="search-date" class="w-full pl-9 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold focus:ring-2 focus:ring-sky-500 focus:bg-white outline-none">
+                            </div>
+                        </div>
+
+                        <!-- Hạng Ghế Ưu Tiên -->
+                        <div>
+                            <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Loại chỗ ưu tiên</label>
+                            <div class="relative">
+                                <i class="fa-solid fa-couch absolute left-3 top-3.5 text-slate-400"></i>
+                                <select id="search-seat-type" class="w-full pl-9 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold focus:ring-2 focus:ring-sky-500 focus:bg-white outline-none">
+                                    <option value="ALL">Tất cả loại ghế / giường</option>
+                                    <option value="SEAT">Ghế ngồi mềm điều hòa</option>
+                                    <option value="BED6">Giường nằm Khoang 6</option>
+                                    <option value="BED4">Giường nằm VIP Khoang 4</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="flex items-center justify-between pt-2">
+                        <div class="flex items-center space-x-4 text-xs font-medium text-slate-500">
+                            <span class="flex items-center"><i class="fa-solid fa-circle-check text-emerald-500 mr-1"></i> Giá đã gồm thuế phí</span>
+                            <span class="flex items-center"><i class="fa-solid fa-bolt text-amber-500 mr-1"></i> Đồng bộ ghế thời gian thực</span>
+                        </div>
+                        <button type="submit" class="px-8 py-3 bg-gradient-to-r from-sky-600 to-blue-700 hover:from-sky-700 hover:to-blue-800 text-white font-bold rounded-xl shadow-md shadow-sky-200 hover:shadow-lg transition flex items-center space-x-2">
+                            <i class="fa-solid fa-magnifying-glass"></i>
+                            <span>Tìm chuyến tàu</span>
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- SMART PRICE COMPARISON BAR (FLUID DATES) -->
+            <div class="bg-white rounded-xl p-3 border border-slate-100 shadow-sm overflow-x-auto">
+                <div class="text-xs font-bold text-slate-400 uppercase mb-2 flex items-center justify-between">
+                    <span><i class="fa-solid fa-chart-line text-sky-500 mr-1"></i> Biểu đồ so sánh giá vé các ngày lân cận</span>
+                    <span class="text-sky-600 text-xs normal-case cursor-pointer hover:underline" onclick="togglePriceChart()"><i class="fa-solid fa-arrows-rotate"></i> Cập nhật</span>
+                </div>
+                <div id="flexible-dates-bar" class="flex space-x-2 min-w-max">
+                    <!-- Dynamic Rendered nearby dates with prices -->
+                </div>
+            </div>
+
+            <!-- SEARCH RESULTS SECTION -->
+            <div id="search-results-container" class="space-y-4">
+                <div class="flex items-center justify-between">
+                    <h3 class="text-lg font-bold text-slate-800 flex items-center">
+                        <i class="fa-solid fa-train-tram text-sky-600 mr-2"></i>
+                        Danh sách chuyến tàu khả dụng
+                    </h3>
+                    <span id="results-count" class="text-xs font-semibold px-2.5 py-1 bg-slate-100 text-slate-600 rounded-full">3 chuyến</span>
+                </div>
+
+                <!-- SMART RECOMMENDATIONS CAROUSEL / HIGHLIGHT CARDS -->
+                <div id="smart-recommendations-grid" class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <!-- Dynamic rendering for: Best Overall, Fastest, Best Value -->
+                </div>
+
+                <!-- ALL TRAIN LISTINGS -->
+            <div id="train-list" class="space-y-4">
+                <!-- Trains will be injected here -->
+            </div>
+        </section>
+
+        <!-- TAB 1.5: LIVE TRAIN TRACKER & ETA (XÁC ĐỊNH TÀU BAO H TỚI BẾN) -->
+        <section id="tracker-tab" class="tab-content hidden space-y-6">
+            <div class="bg-white rounded-2xl p-6 shadow-md border border-slate-100 space-y-6">
+                <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    <div>
+                        <h2 class="text-2xl font-bold text-slate-900 flex items-center">
+                            <i class="fa-solid fa-satellite-dish text-sky-600 mr-2 animate-bounce"></i> Định Vị Chuyến Tàu Trực Tuyến & ETA
+                        </h2>
+                        <p class="text-xs text-slate-500">Xem tiến độ hành trình, tọa độ GPS thời gian thực và thời gian dự kiến tới bến (ETA)</p>
+                    </div>
+                    <div class="flex items-center space-x-3">
+                        <select id="tracker-train-select" onchange="updateLiveTracker()" class="px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold text-sky-700 outline-none">
+                            <option value="SE1">Tàu SE1 (Hà Nội ➔ Sài Gòn)</option>
+                            <option value="SE3">Tàu SE3 (Hà Nội ➔ Sài Gòn)</option>
+                            <option value="SE7">Tàu SE7 (Hà Nội ➔ Sài Gòn)</option>
+                        </select>
+                        <button onclick="updateLiveTracker()" class="px-4 py-2.5 bg-sky-600 text-white rounded-xl text-sm font-bold shadow hover:bg-sky-700 transition">
+                            <i class="fa-solid fa-arrows-rotate"></i> Làm mới
+                        </button>
+                    </div>
+                </div>
+
+                <!-- LIVE METRIC CARDS -->
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div class="bg-sky-50 border border-sky-100 p-4 rounded-xl space-y-1">
+                        <span class="text-xs font-bold text-sky-600 block"><i class="fa-solid fa-location-crosshairs mr-1"></i> Vị trí hiện tại</span>
+                        <span id="tracker-current-location" class="text-base font-extrabold text-sky-900">Đang tải...</span>
+                    </div>
+                    <div class="bg-amber-50 border border-amber-100 p-4 rounded-xl space-y-1">
+                        <span class="text-xs font-bold text-amber-600 block"><i class="fa-solid fa-stopwatch mr-1"></i> Dự kiến tới bến (ETA)</span>
+                        <span id="tracker-eta-time" class="text-base font-extrabold text-amber-900">--:--</span>
+                    </div>
+                    <div class="bg-emerald-50 border border-emerald-100 p-4 rounded-xl space-y-1">
+                        <span class="text-xs font-bold text-emerald-600 block"><i class="fa-solid fa-gauge-high mr-1"></i> Tốc độ trung bình</span>
+                        <span id="tracker-speed" class="text-base font-extrabold text-emerald-900">78 km/h</span>
+                    </div>
+                    <div class="bg-purple-50 border border-purple-100 p-4 rounded-xl space-y-1">
+                        <span class="text-xs font-bold text-purple-600 block"><i class="fa-solid fa-road mr-1"></i> Khoảng cách còn lại</span>
+                        <span id="tracker-distance-left" class="text-base font-extrabold text-purple-900">-- km</span>
+                    </div>
+                </div>
+
+                <!-- PROGRESS TIMELINE BAR -->
+                <div class="bg-slate-50 p-6 rounded-2xl border border-slate-200 space-y-4">
+                    <div class="flex items-center justify-between text-xs font-bold text-slate-500">
+                        <span>Ga Khởi Hành: <strong class="text-slate-900">Hà Nội (0km)</strong></span>
+                        <span id="tracker-progress-percentage" class="text-sky-600 text-sm">Tiến độ: 0%</span>
+                        <span>Ga Đến: <strong class="text-slate-900">Sài Gòn (1,726km)</strong></span>
+                    </div>
+                    
+                    <!-- Visual Progress Bar -->
+                    <div class="w-full bg-slate-200 h-3 rounded-full relative overflow-hidden">
+                        <div id="tracker-progress-bar-fill" class="bg-gradient-to-r from-sky-500 to-emerald-500 h-full rounded-full transition-all duration-1000" style="width: 45%;"></div>
+                        <div id="tracker-train-icon-marker" class="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 text-sky-700 bg-white px-1.5 py-0.5 rounded-full shadow text-xs" style="left: 45%;">
+                            <i class="fa-solid fa-train"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- STATIONS ROUTE CHECKPOINTS -->
+                <div class="space-y-3">
+                    <h4 class="text-sm font-bold text-slate-800"><i class="fa-solid fa-list-check text-sky-600 mr-1"></i> Lịch trình các ga dừng & Thời gian thực tế</h4>
+                    <div id="tracker-stations-timeline" class="space-y-2">
+                        <!-- Injected dynamically -->
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- SEAT SELECTION MODAL / SECTION (INLINE OR EXPANDABLE) -->
+        <section id="seat-selection-view" class="hidden space-y-6">
+            <div class="flex items-center justify-between bg-white p-4 rounded-xl border border-slate-100 shadow-sm">
+                <div>
+                    <button onclick="backToSearchResults()" class="text-xs font-bold text-sky-600 hover:text-sky-800 flex items-center mb-1">
+                        <i class="fa-solid fa-arrow-left mr-1"></i> Quay lại tìm chuyến
+                    </button>
+                    <h2 class="text-xl font-bold text-slate-900 flex items-center">
+                        <span id="seat-view-train-code" class="text-sky-600 mr-2">SE1</span>
+                        <span id="seat-view-route">Hà Nội ➔ Sài Gòn</span>
+                    </h2>
+                    <p id="seat-view-time" class="text-xs text-slate-500 mt-0.5">Khởi hành: 19:30, 20/10/2026</p>
+                </div>
+                <div class="text-right">
+                    <span class="text-xs text-slate-400 block">Tự động giữ ghế trong</span>
+                    <span id="hold-timer" class="text-lg font-mono font-bold text-amber-600">09:59</span>
+                </div>
+            </div>
+
+            <!-- CARRIAGE TAB SELECTOR -->
+            <div class="bg-white p-4 rounded-xl border border-slate-100 shadow-sm">
+                <h4 class="text-xs font-bold text-slate-400 uppercase mb-3">Chọn Toa Tàu & Hạng Chỗ</h4>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-3" id="carriage-selector-list">
+                    <!-- Carriage buttons injected dynamically -->
+                </div>
+            </div>
+
+            <!-- SEAT MAP CANVAS & LEGEND -->
+            <div class="bg-white p-6 rounded-2xl border border-slate-100 shadow-md">
+                
+                <!-- Legend -->
+                <div class="flex flex-wrap items-center justify-between gap-3 pb-6 border-b border-slate-100 text-xs font-medium">
+                    <div class="flex items-center space-x-6">
+                        <div class="flex items-center space-x-2">
+                            <span class="w-5 h-5 rounded-md bg-emerald-100 border border-emerald-400 inline-block"></span>
+                            <span>Trống</span>
+                        </div>
+                        <div class="flex items-center space-x-2">
+                            <span class="w-5 h-5 rounded-md bg-amber-400 border border-amber-500 shadow inline-block"></span>
+                            <span>Đang chọn</span>
+                        </div>
+                        <div class="flex items-center space-x-2">
+                            <span class="w-5 h-5 rounded-md bg-rose-200 border border-rose-300 text-rose-500 flex items-center justify-center text-xs"><i class="fa-solid fa-lock"></i></span>
+                            <span>Đã bán (Khóa)</span>
+                        </div>
+                        <div class="flex items-center space-x-2">
+                            <span class="w-5 h-5 rounded-md bg-purple-100 border border-purple-400 text-purple-600 flex items-center justify-center text-xs"><i class="fa-solid fa-heart"></i></span>
+                            <span>Ưu tiên (Trẻ em/Người già)</span>
+                        </div>
+                    </div>
+                    <div class="text-slate-400 text-xs italic">
+                        *Di chuột hoặc bấm vào ghế để xem tiện ích chi tiết (Ổ điện, Cửa sổ, WC...)
+                    </div>
+                </div>
+
+                <!-- REALTIME SYNC BADGE -->
+                <div class="flex items-center justify-between py-2 text-xs text-slate-500">
+                    <span class="flex items-center text-emerald-600 font-semibold">
+                        <span class="w-2 h-2 rounded-full bg-emerald-500 animate-ping mr-2"></span>
+                        Đang đồng bộ trạng thái ghế thời gian thực (Firestore Realtime)
+                    </span>
+                    <span id="carriage-capacity-text" class="font-medium text-slate-600">Toa 1: Còn 12/28 chỗ</span>
+                </div>
+
+                <!-- SEAT LAYOUT CONTAINER -->
+                <div id="seat-map-grid" class="py-6 overflow-x-auto">
+                    <!-- Dynamic seats layout injected here -->
+                </div>
+            </div>
+
+            <!-- BOOKING SUMMARY BAR & PROCEED BUTTON -->
+            <div class="bg-slate-900 text-white p-5 rounded-2xl shadow-xl flex flex-col md:flex-row items-center justify-between gap-4">
+                <div class="space-y-1 text-center md:text-left">
+                    <div class="text-xs text-slate-400">Các ghế đã chọn: <span id="selected-seats-list" class="text-amber-300 font-bold">Chưa chọn ghế nào</span></div>
+                    <div class="text-2xl font-extrabold text-white">Tổng tiền: <span id="selected-total-price" class="text-emerald-400">0 VNĐ</span></div>
+                </div>
+                <button onclick="goToCheckout()" id="btn-proceed-checkout" disabled class="w-full md:w-auto px-8 py-3.5 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-extrabold rounded-xl shadow-lg transition disabled:opacity-50 disabled:cursor-not-allowed">
+                    Tiến hành Thanh Toán <i class="fa-solid fa-arrow-right ml-2"></i>
+                </button>
+            </div>
+        </section>
+
+        <!-- TAB 2: CHECKOUT & PAYMENT -->
+        <section id="checkout-tab" class="tab-content hidden space-y-6">
+            <div class="bg-white rounded-2xl p-6 shadow-md border border-slate-100">
+                <button onclick="backToSeatSelection()" class="text-xs font-bold text-sky-600 hover:text-sky-800 flex items-center mb-4">
+                    <i class="fa-solid fa-arrow-left mr-1"></i> Quay lại sơ đồ ghế
+                </button>
+                
+                <h2 class="text-2xl font-bold text-slate-900 mb-6 flex items-center">
+                    <i class="fa-solid fa-id-card text-sky-600 mr-2"></i> Thông Tin Hành Khách & Thanh Toán
+                </h2>
+
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                    
+                    <!-- LEFT COLUMN: PASSENGER FORM -->
+                    <div class="lg:col-span-2 space-y-6">
+                        <!-- Auto-fill Alert if logged in -->
+                        <div id="autofill-notice" class="bg-sky-50 border border-sky-200 rounded-xl p-3 text-xs text-sky-800 flex items-center justify-between">
+                            <span><i class="fa-solid fa-circle-info text-sky-600 mr-1"></i> Đã tự động điền thông tin từ tài khoản <strong>RailExpress</strong> của bạn.</span>
+                        </div>
+
+                        <!-- Passenger Info Form -->
+                        <div id="passengers-form-container" class="space-y-4">
+                            <!-- Injected per seat -->
+                        </div>
+
+                        <!-- Contact Info -->
+                        <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-3">
+                            <h4 class="text-sm font-bold text-slate-700">Thông tin liên hệ nhận vé điện tử</h4>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                <div>
+                                    <label class="block text-xs text-slate-500 mb-1">Email nhận vé</label>
+                                    <input type="email" id="contact-email" class="w-full px-3 py-2 border rounded-lg text-sm bg-white focus:ring-2 focus:ring-sky-500 outline-none" placeholder="email@example.com">
+                                </div>
+                                <div>
+                                    <label class="block text-xs text-slate-500 mb-1">Số điện thoại (Nhận SMS/Zalo ZNS)</label>
+                                    <input type="tel" id="contact-phone" class="w-full px-3 py-2 border rounded-lg text-sm bg-white focus:ring-2 focus:ring-sky-500 outline-none" placeholder="0901234567">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Payment Method Selection -->
+                        <div class="space-y-3">
+                            <h4 class="text-sm font-bold text-slate-700">Chọn phương thức thanh toán</h4>
+                            <div class="grid grid-cols-2 md:grid-cols-3 gap-3">
+                                <label class="payment-card border border-sky-500 bg-sky-50/50 p-3 rounded-xl cursor-pointer flex flex-col items-center justify-center text-center space-y-1">
+                                    <input type="radio" name="payment" value="VIETQR" checked class="hidden" onchange="updatePaymentView()">
+                                    <i class="fa-solid fa-qrcode text-2xl text-sky-600"></i>
+                                    <span class="text-xs font-bold text-slate-800">VietQR Chuyển khoản</span>
+                                    <span class="text-[10px] text-emerald-600 font-semibold">Tự động duyệt 24/7</span>
+                                </label>
+                                <label class="payment-card border border-slate-200 p-3 rounded-xl cursor-pointer flex flex-col items-center justify-center text-center space-y-1">
+                                    <input type="radio" name="payment" value="MOMO" class="hidden" onchange="updatePaymentView()">
+                                    <i class="fa-solid fa-wallet text-2xl text-pink-600"></i>
+                                    <span class="text-xs font-bold text-slate-800">Ví MoMo</span>
+                                </label>
+                                <label class="payment-card border border-slate-200 p-3 rounded-xl cursor-pointer flex flex-col items-center justify-center text-center space-y-1">
+                                    <input type="radio" name="payment" value="VNPAY" class="hidden" onchange="updatePaymentView()">
+                                    <i class="fa-solid fa-credit-card text-2xl text-blue-600"></i>
+                                    <span class="text-xs font-bold text-slate-800">VNPay / ATM</span>
+                                </label>
+                            </div>
+                        </div>
+
+                    </div>
+
+                    <!-- RIGHT COLUMN: SUMMARY & DYNAMIC VIETQR DISPLAY -->
+                    <div class="space-y-6">
+                        <div class="bg-slate-50 rounded-2xl p-5 border border-slate-200 space-y-4">
+                            <h3 class="text-base font-bold text-slate-900 border-b border-slate-200 pb-3">Tóm tắt đơn hàng</h3>
+                            
+                            <div id="checkout-summary-details" class="space-y-2 text-xs">
+                                <!-- Details injected by JS -->
+                            </div>
+
+                            <div class="border-t border-slate-200 pt-3 flex justify-between items-center text-sm">
+                                <span class="font-bold text-slate-700">Tổng thanh toán:</span>
+                                <span id="checkout-final-price" class="text-xl font-extrabold text-sky-700">0 VNĐ</span>
+                            </div>
+
+                            <!-- DYNAMIC VIETQR BOX -->
+                            <div id="vietqr-container" class="bg-white p-4 rounded-xl border border-sky-100 shadow-sm text-center space-y-3">
+                                <span class="text-xs font-bold text-sky-700 uppercase block">Mã QR Thanh Toán Tự Động</span>
+                                <div id="qrcode-canvas" class="flex justify-center my-2"></div>
+                                <div class="text-left text-xs bg-slate-50 p-2.5 rounded-lg space-y-1 font-mono">
+                                    <div>Ngân hàng: <strong class="text-slate-800">MB Bank (Quân Đội)</strong></div>
+                                    <div>Số TK: <strong class="text-slate-800">999988889999</strong></div>
+                                    <div>Chủ TK: <strong class="text-slate-800">RAILEXPRESS CO</strong></div>
+                                    <div>Nội dung: <strong id="qr-memo" class="text-sky-600">RE-88321</strong></div>
+                                </div>
+                            </div>
+
+                            <button onclick="confirmPaymentAndIssueTicket()" class="w-full py-3.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-extrabold rounded-xl shadow-lg transition">
+                                <i class="fa-solid fa-check-circle mr-1"></i> Xác Nhận Đã Thanh Toán & Xuất Vé
+                            </button>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </section>
+
+        <!-- TAB 3: VÉ CỦA TÔI (MY TICKETS / BOARDING PASS & QR CODE) -->
+        <section id="tickets-tab" class="tab-content hidden space-y-6">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h2 class="text-2xl font-bold text-slate-900">Vé Điện Tử Của Tôi</h2>
+                    <p class="text-xs text-slate-500">Quản lý mã QR soát vé, hủy vé hoặc đổi chuyến trực tuyến</p>
+                </div>
+            </div>
+
+            <!-- TICKET LIST CONTAINER -->
+            <div id="my-tickets-list" class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- Injected dynamically from Firestore -->
+            </div>
+        </section>
+
+        <!-- TAB 4: LỊCH SỬ CHUYẾN ĐI (TRAVEL HISTORY & ANALYTICS) -->
+        <section id="history-tab" class="tab-content hidden space-y-6">
+            <div class="bg-white rounded-2xl p-6 shadow-md border border-slate-100 space-y-6">
+                <div>
+                    <h2 class="text-2xl font-bold text-slate-900">Lịch Sử Chuyến Đi & Thống Kê</h2>
+                    <p class="text-xs text-slate-500">Dữ liệu chuyến đi được lưu trữ đồng bộ trên Firebase Firestore</p>
+                </div>
+
+                <!-- Stats summary -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div class="bg-sky-50 border border-sky-100 p-4 rounded-xl">
+                        <span class="text-xs font-semibold text-sky-600 block">Tổng số chuyến đi</span>
+                        <span id="stat-total-trips" class="text-2xl font-extrabold text-sky-900">0</span>
+                    </div>
+                    <div class="bg-emerald-50 border border-emerald-100 p-4 rounded-xl">
+                        <span class="text-xs font-semibold text-emerald-600 block">Tuyến đi nhiều nhất</span>
+                        <span id="stat-favorite-route" class="text-base font-extrabold text-emerald-900">Chưa có</span>
+                    </div>
+                    <div class="bg-purple-50 border border-purple-100 p-4 rounded-xl">
+                        <span class="text-xs font-semibold text-purple-600 block">Hạng ghế yêu thích</span>
+                        <span id="stat-favorite-seat" class="text-base font-extrabold text-purple-900">Ghế ngồi mềm</span>
+                    </div>
+                </div>
+
+                <!-- History Table -->
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="border-b border-slate-200 text-xs text-slate-400 uppercase font-bold">
+                                <th class="py-3 px-4">Mã Vé</th>
+                                <th class="py-3 px-4">Chuyến Tàu</th>
+                                <th class="py-3 px-4">Hành Trình</th>
+                                <th class="py-3 px-4">Ngày Đi</th>
+                                <th class="py-3 px-4">Chỗ Đặt</th>
+                                <th class="py-3 px-4">Trạng Thái</th>
+                            </tr>
+                        </thead>
+                        <tbody id="history-table-body" class="text-xs text-slate-700 divide-y divide-slate-100">
+                            <!-- History items -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- AUTHENTICATION MODAL (LOGIN / REGISTER) -->
+    <div id="auth-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl space-y-6 relative animate-fade-in">
+            <button onclick="closeAuthModal()" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600 w-8 h-8 rounded-full flex items-center justify-center">
+                <i class="fa-solid fa-xmark text-lg"></i>
+            </button>
+
+            <div class="text-center space-y-1">
+                <div class="w-12 h-12 bg-sky-100 text-sky-600 rounded-2xl flex items-center justify-center mx-auto text-xl font-bold mb-2">
+                    <i class="fa-solid fa-train"></i>
+                </div>
+                <h3 id="auth-modal-title" class="text-xl font-bold text-slate-900">Đăng Nhập RailExpress</h3>
+                <p class="text-xs text-slate-500">Đồng bộ lịch sử chuyến đi & tự động điền vé</p>
+            </div>
+
+            <!-- Form -->
+            <form id="auth-form" onsubmit="handleAuthSubmit(event)" class="space-y-4">
+                <div id="field-fullname" class="hidden">
+                    <label class="block text-xs font-bold text-slate-600 mb-1">Họ và Tên</label>
+                    <input type="text" id="auth-name" class="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-sky-500 outline-none" placeholder="Nguyễn Văn A">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-600 mb-1">Email</label>
+                    <input type="email" id="auth-email" required class="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-sky-500 outline-none" placeholder="hanhkhach@example.com">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-600 mb-1">Mật khẩu</label>
+                    <input type="password" id="auth-password" required class="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-sky-500 outline-none" placeholder="••••••••">
+                </div>
+
+                <button type="submit" id="btn-auth-submit" class="w-full py-3 bg-sky-600 hover:bg-sky-700 text-white font-bold rounded-xl text-sm shadow-md transition">
+                    Đăng Nhập
+                </button>
+            </form>
+
+            <div class="text-center text-xs text-slate-500 pt-2 border-t border-slate-100">
+                <span id="auth-toggle-text">Chưa có tài khoản?</span>
+                <button type="button" onclick="toggleAuthMode()" id="btn-toggle-auth" class="text-sky-600 font-bold ml-1 hover:underline">
+                    Đăng ký ngay
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- PUSH NOTIFICATION / ZNS SIMULATION BANNER -->
+    <div id="notification-toast" class="fixed bottom-4 right-4 z-50 transform translate-y-20 opacity-0 transition-all duration-300 max-w-sm w-full bg-slate-900 text-white p-4 rounded-2xl shadow-2xl flex items-start space-x-3 border border-slate-800">
+        <div class="text-amber-400 text-xl pt-0.5"><i class="fa-solid fa-bell"></i></div>
+        <div class="flex-grow space-y-0.5">
+            <h5 id="toast-title" class="text-xs font-bold text-amber-400">Nhắc nhở RailExpress</h5>
+            <p id="toast-body" class="text-xs text-slate-300">Chuyến tàu SE1 của bạn sẽ khởi hành trong 2 giờ nữa!</p>
+        </div>
+        <button onclick="dismissToast()" class="text-slate-500 hover:text-white text-xs"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+
+    <!-- FOOTER -->
+    <footer class="bg-white border-t border-slate-200 py-6 mt-12">
+        <div class="max-w-7xl mx-auto px-4 text-center text-xs text-slate-400 space-y-2">
+            <p>© 2026 RailExpress Smart Booking Engine. Tích hợp Firebase Realtime Database & Authentication.</p>
+            <p>Hệ thống vận hành theo quy chuẩn Tổng công ty Đường sắt Việt Nam.</p>
+        </div>
+    </footer>
+
+    <!-- FIREBASE SDK V10+ & APPLICATION LOGIC -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { 
+            getAuth, 
+            signInAnonymously, 
+            signInWithCustomToken, 
+            createUserWithEmailAndPassword, 
+            signInWithEmailAndPassword, 
+            signOut, 
+            onAuthStateChanged,
+            updateProfile
+        } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { 
+            getFirestore, 
+            doc, 
+            getDoc, 
+            setDoc, 
+            updateDoc, 
+            collection, 
+            onSnapshot, 
+            addDoc,
+            query
+        } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // Global Firebase Configuration & Global Variables setup
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'railexpress-default-app';
+        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {
+            apiKey: "AIzaSyDemoDummyKeyForRailExpress001",
+            authDomain: "railexpress-demo.firebaseapp.com",
+            projectId: "railexpress-demo",
+            storageBucket: "railexpress-demo.appspot.com",
+            messagingSenderId: "123456789",
+            appId: "1:123456789:web:abcdef123456"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        let currentUser = null;
+        let isAuthModalRegisterMode = false;
+        let currentSearchData = { from: 'Hà Nội', to: 'Sài Gòn', date: '2026-10-20', seatType: 'ALL' };
+        let selectedTrain = null;
+        let selectedCarriageIndex = 0;
+        let selectedSeats = []; // [{ id, number, price, carriageName, type }]
+        let activeHoldTimer = null;
+        let userBookings = [];
+        let liveSeatStates = {}; // Firestore realtime cache for seats
+
+        // Sample Trains Master Data
+        const TRAINS_DATABASE = [
+            {
+                id: 'SE1',
+                name: 'Tàu Hỏa Tốc SE1',
+                from: 'Hà Nội',
+                to: 'Sài Gòn',
+                departTime: '19:30',
+                arriveTime: '05:45 (+1 ngày)',
+                durationMinutes: 1815, // 30h 15m
+                durationText: '30 giờ 15 phút',
+                basePrice: 850000,
+                rating: 4.9,
+                badge: 'FASTEST', // ⚡ Chuyến nhanh nhất
+                carriages: [
+                    { id: 'c1', name: 'Toa 1 - Ngồi Mềm Điều Hòa', type: 'SEAT', totalSeats: 28, priceMultiplier: 1.0 },
+                    { id: 'c2', name: 'Toa 2 - Giường Nằm Khoang 6', type: 'BED6', totalSeats: 18, priceMultiplier: 1.35 },
+                    { id: 'c3', name: 'Toa 3 - Giường Nằm VIP Khoang 4', type: 'BED4', totalSeats: 12, priceMultiplier: 1.75 }
+                ]
+            },
+            {
+                id: 'SE3',
+                name: 'Tàu Tiêu Chuẩn SE3',
+                from: 'Hà Nội',
+                to: 'Sài Gòn',
+                departTime: '06:00',
+                arriveTime: '15:00 (+1 ngày)',
+                durationMinutes: 1980, // 33h
+                durationText: '33 giờ 00 phút',
+                basePrice: 690000,
+                rating: 4.6,
+                badge: 'VALUE', // 💰 Giá tiết kiệm nhất
+                carriages: [
+                    { id: 'c1', name: 'Toa 1 - Ngồi Mềm Điều Hòa', type: 'SEAT', totalSeats: 28, priceMultiplier: 1.0 },
+                    { id: 'c2', name: 'Toa 2 - Giường Nằm Khoang 6', type: 'BED6', totalSeats: 18, priceMultiplier: 1.35 }
+                ]
+            },
+            {
+                id: 'SE7',
+                name: 'Tàu Cân Bằng SE7',
+                from: 'Hà Nội',
+                to: 'Sài Gòn',
+                departTime: '12:15',
+                arriveTime: '20:30 (+1 ngày)',
+                durationMinutes: 1935, // 32h 15m
+                durationText: '32 giờ 15 phút',
+                basePrice: 780000,
+                rating: 4.8,
+                badge: 'BEST', // 🌟 Lựa chọn tốt nhất
+                carriages: [
+                    { id: 'c1', name: 'Toa 1 - Ngồi Mềm Điều Hòa', type: 'SEAT', totalSeats: 28, priceMultiplier: 1.0 },
+                    { id: 'c2', name: 'Toa 2 - Giường Nằm Khoang 6', type: 'BED6', totalSeats: 18, priceMultiplier: 1.35 },
+                    { id: 'c3', name: 'Toa 3 - Giường Nằm VIP Khoang 4', type: 'BED4', totalSeats: 12, priceMultiplier: 1.75 }
+                ]
+            }
+        ];
+
+        // -------------------------------------------------------------
+        // AUTHENTICATION ENGINE
+        // -------------------------------------------------------------
+        async function initAuth() {
+            try {
+                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                    await signInWithCustomToken(auth, __initial_auth_token);
+                } else {
+                    await signInAnonymously(auth);
+                }
+            } catch (err) {
+                console.warn("Auth initialization fallback:", err);
+            }
+
+            onAuthStateChanged(auth, (user) => {
+                currentUser = user;
+                renderAuthUI();
+                if (user && !user.isAnonymous) {
+                    subscribeUserBookings();
+                    checkPersonalizedRecommendations();
+                }
+            });
+        }
+
+        function renderAuthUI() {
+            const container = document.getElementById('auth-status-container');
+            if (currentUser && !currentUser.isAnonymous) {
+                const displayName = currentUser.displayName || (currentUser.email ? currentUser.email.split('@')[0] : 'Hành khách');
+                container.innerHTML = `
+                    <div class="flex items-center space-x-3">
+                        <div class="text-right hidden sm:block">
+                            <span class="block text-xs font-bold text-slate-800">${displayName}</span>
+                            <span class="block text-[10px] text-emerald-600 font-semibold"><i class="fa-solid fa-shield-halved"></i> Đã xác thực</span>
+                        </div>
+                        <button onclick="handleSignOut()" class="px-3 py-1.5 rounded-lg border border-slate-200 text-xs font-bold text-slate-600 hover:text-rose-600 hover:bg-rose-50 transition">
+                            <i class="fa-solid fa-right-from-bracket"></i> Đăng xuất
+                        </button>
+                    </div>
+                `;
+                document.getElementById('personalized-welcome').classList.remove('hidden');
+                document.getElementById('user-display-name').textContent = displayName;
+            } else {
+                container.innerHTML = `
+                    <button onclick="openAuthModal('login')" class="px-4 py-2 rounded-xl text-xs font-bold text-white bg-sky-600 hover:bg-sky-700 shadow-md transition">
+                        <i class="fa-solid fa-user-check mr-1"></i> Đăng nhập / Đăng ký
+                    </button>
+                `;
+                document.getElementById('personalized-welcome').classList.add('hidden');
+            }
+        }
+
+        window.openAuthModal = (mode) => {
+            isAuthModalRegisterMode = (mode === 'register');
+            updateAuthModalUI();
+            document.getElementById('auth-modal').classList.remove('hidden');
+        };
+
+        window.closeAuthModal = () => {
+            document.getElementById('auth-modal').classList.add('hidden');
+        };
+
+        window.toggleAuthMode = () => {
+            isAuthModalRegisterMode = !isAuthModalRegisterMode;
+            updateAuthModalUI();
+        };
+
+        function updateAuthModalUI() {
+            const title = document.getElementById('auth-modal-title');
+            const nameField = document.getElementById('field-fullname');
+            const submitBtn = document.getElementById('btn-auth-submit');
+            const toggleText = document.getElementById('auth-toggle-text');
+            const toggleBtn = document.getElementById('btn-toggle-auth');
+
+            if (isAuthModalRegisterMode) {
+                title.textContent = "Đăng Ký Tài Khoản RailExpress";
+                nameField.classList.remove('hidden');
+                submitBtn.textContent = "Tạo Tài Khoản Mới";
+                toggleText.textContent = "Đã có tài khoản?";
+                toggleBtn.textContent = "Đăng nhập ngay";
+            } else {
+                title.textContent = "Đăng Nhập RailExpress";
+                nameField.classList.add('hidden');
+                submitBtn.textContent = "Đăng Nhập";
+                toggleText.textContent = "Chưa có tài khoản?";
+                toggleBtn.textContent = "Đăng ký ngay";
+            }
+        }
+
+        window.handleAuthSubmit = async (e) => {
+            e.preventDefault();
+            const email = document.getElementById('auth-email').value;
+            const password = document.getElementById('auth-password').value;
+            const name = document.getElementById('auth-name').value;
+
+            try {
+                if (isAuthModalRegisterMode) {
+                    const res = await createUserWithEmailAndPassword(auth, email, password);
+                    if (name) {
+                        await updateProfile(res.user, { displayName: name });
+                    }
+                    Swal.fire('Thành công', 'Đăng ký tài khoản thành công!', 'success');
+                } else {
+                    await signInWithEmailAndPassword(auth, email, password);
+                    Swal.fire('Thành công', 'Đăng nhập thành công!', 'success');
+                }
+                closeAuthModal();
+            } catch (err) {
+                Swal.fire('Lỗi xác thực', err.message, 'error');
+            }
+        };
+
+        window.handleSignOut = async () => {
+            await signOut(auth);
+            await signInAnonymously(auth);
+            Swal.fire('Đã đăng xuất', 'Tài khoản của bạn đã được đăng xuất.', 'info');
+        };
+
+        // -------------------------------------------------------------
+        // SEARCH ENGINE & PERSONALIZED RECOMMENDATIONS
+        // -------------------------------------------------------------
+        window.handleSearch = (e) => {
+            if (e) e.preventDefault();
+            const from = document.getElementById('search-from').value;
+            const to = document.getElementById('search-to').value;
+            const date = document.getElementById('search-date').value || '2026-10-20';
+            const seatType = document.getElementById('search-seat-type').value;
+
+            if (from === to) {
+                Swal.fire('Thông báo', 'Ga đi và Ga đến không được giống nhau!', 'warning');
+                return;
+            }
+
+            currentSearchData = { from, to, date, seatType };
+            renderFlexibleDateBar(date);
+            renderSearchResults();
+        };
+
+        function renderFlexibleDateBar(selectedDateStr) {
+            const container = document.getElementById('flexible-dates-bar');
+            container.innerHTML = '';
+            
+            const baseDate = new Date(selectedDateStr || '2026-10-20');
+            for (let i = -3; i <= 3; i++) {
+                const d = new Date(baseDate);
+                d.setDate(d.getDate() + i);
+                const dateISO = d.toISOString().split('T')[0];
+                const dayName = d.toLocaleDateString('vi-VN', { weekday: 'short' });
+                const isSelected = dateISO === selectedDateStr;
+                
+                // Simulated slight price variation
+                const priceCoeff = 1 + (Math.abs(i) % 2 === 0 ? 0 : 0.08);
+                const samplePrice = Math.round(690000 * priceCoeff).toLocaleString('vi-VN');
+
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.className = `flex-1 min-w-[110px] p-2.5 rounded-xl border text-center transition ${
+                    isSelected 
+                        ? 'border-sky-600 bg-sky-50 ring-2 ring-sky-500/30' 
+                        : 'border-slate-200 bg-white hover:border-sky-300'
+                }`;
+                btn.onclick = () => {
+                    document.getElementById('search-date').value = dateISO;
+                    handleSearch();
+                };
+
+                btn.innerHTML = `
+                    <span class="block text-[10px] uppercase font-bold text-slate-400">${dayName}</span>
+                    <span class="block text-xs font-extrabold ${isSelected ? 'text-sky-700' : 'text-slate-800'}">${d.getDate()}/${d.getMonth()+1}</span>
+                    <span class="block text-[11px] font-semibold text-emerald-600 mt-1">${samplePrice}đ</span>
+                `;
+                container.appendChild(btn);
+            }
+        }
+
+        function renderSearchResults() {
+            const recGrid = document.getElementById('smart-recommendations-grid');
+            const listContainer = document.getElementById('train-list');
+            recGrid.innerHTML = '';
+            listContainer.innerHTML = '';
+
+            // Filter train matching (Simulated for route)
+            const trains = TRAINS_DATABASE.map(t => ({
+                ...t,
+                from: currentSearchData.from,
+                to: currentSearchData.to,
+            }));
+
+            // Render Recommendation Cards
+            trains.forEach(train => {
+                let badgeHTML = '';
+                let cardBorder = 'border-slate-200';
+                
+                if (train.badge === 'BEST') {
+                    badgeHTML = `<span class="px-2.5 py-1 bg-amber-500 text-slate-950 font-extrabold text-[10px] rounded-full uppercase tracking-wider"><i class="fa-solid fa-star mr-1"></i> Lựa chọn tốt nhất</span>`;
+                    cardBorder = 'border-amber-400 ring-2 ring-amber-400/20';
+                } else if (train.badge === 'FASTEST') {
+                    badgeHTML = `<span class="px-2.5 py-1 bg-sky-600 text-white font-extrabold text-[10px] rounded-full uppercase tracking-wider"><i class="fa-solid fa-bolt mr-1"></i> Nhanh nhất (Tiết kiệm 2h45m)</span>`;
+                    cardBorder = 'border-sky-400';
+                } else if (train.badge === 'VALUE') {
+                    badgeHTML = `<span class="px-2.5 py-1 bg-emerald-600 text-white font-extrabold text-[10px] rounded-full uppercase tracking-wider"><i class="fa-solid fa-piggy-bank mr-1"></i> Giá tiết kiệm nhất</span>`;
+                    cardBorder = 'border-emerald-400';
+                }
+
+                // Render Summary Recommendation Card
+                const recCard = document.createElement('div');
+                recCard.className = `bg-white rounded-2xl p-4 border ${cardBorder} shadow-sm space-y-3 flex flex-col justify-between`;
+                recCard.innerHTML = `
+                    <div class="space-y-2">
+                        <div class="flex items-center justify-between">
+                            ${badgeHTML}
+                            <span class="text-xs font-bold text-slate-400"><i class="fa-solid fa-star text-amber-400"></i> ${train.rating}</span>
+                        </div>
+                        <h4 class="text-base font-extrabold text-slate-900">${train.name}</h4>
+                        <div class="text-xs text-slate-500 space-y-1">
+                            <div><i class="fa-solid fa-clock text-sky-600"></i> Giờ xuất phát: <strong class="text-slate-800">${train.departTime}</strong></div>
+                            <div><i class="fa-solid fa-hourglass-half text-sky-600"></i> Thời gian: <strong>${train.durationText}</strong></div>
+                        </div>
+                    </div>
+                    <div class="border-t border-slate-100 pt-3 flex items-center justify-between">
+                        <div>
+                            <span class="text-[10px] text-slate-400 block">Giá từ</span>
+                            <span class="text-base font-black text-sky-700">${train.basePrice.toLocaleString('vi-VN')} đ</span>
+                        </div>
+                        <button onclick="selectTrainForSeats('${train.id}')" class="px-4 py-2 bg-sky-600 hover:bg-sky-700 text-white font-bold rounded-xl text-xs shadow transition">
+                            Chọn ghế
+                        </button>
+                    </div>
+                `;
+                recGrid.appendChild(recCard);
+
+                // Render Full Detailed Train Listing Card
+                const fullCard = document.createElement('div');
+                fullCard.className = "bg-white rounded-2xl p-5 border border-slate-200 shadow-sm hover:shadow-md transition space-y-4";
+                fullCard.innerHTML = `
+                    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-slate-100">
+                        <div class="flex items-center space-x-3">
+                            <div class="w-12 h-12 bg-sky-50 border border-sky-100 rounded-xl flex items-center justify-center text-sky-700 font-extrabold text-lg">
+                                ${train.id}
+                            </div>
+                            <div>
+                                <h4 class="text-base font-bold text-slate-900">${train.name}</h4>
+                                <span class="text-xs text-slate-400"><i class="fa-solid fa-shield text-emerald-500"></i> Đúng giờ 99.2% • Wifi tốc độ cao</span>
+                            </div>
+                        </div>
+                        <div class="flex items-center space-x-6 text-center">
+                            <div>
+                                <span class="text-lg font-black text-slate-900 block">${train.departTime}</span>
+                                <span class="text-xs font-semibold text-slate-500">${train.from}</span>
+                            </div>
+                            <div class="text-center px-2">
+                                <span class="text-[10px] text-sky-600 font-bold block">${train.durationText}</span>
+                                <div class="w-24 h-0.5 bg-slate-200 relative my-1">
+                                    <i class="fa-solid fa-train text-sky-600 text-xs absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-white px-1"></i>
+                                </div>
+                                <span class="text-[10px] text-slate-400 block">Trực tiếp</span>
+                            </div>
+                            <div>
+                                <span class="text-lg font-black text-slate-900 block">${train.arriveTime}</span>
+                                <span class="text-xs font-semibold text-slate-500">${train.to}</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Upgrade Suggestion Alert -->
+                    <div class="bg-amber-50 border border-amber-200 rounded-xl p-2.5 text-xs text-amber-900 flex items-center justify-between">
+                        <span><i class="fa-solid fa-lightbulb text-amber-600 mr-1.5"></i> Gợi ý nâng cấp: Thêm <strong>35.000đ</strong> để trải nghiệm Giường nằm Khoang 4 5 sao cao cấp!</span>
+                        <span class="text-[10px] bg-amber-200 font-bold px-2 py-0.5 rounded-full uppercase">Ưu đãi hôm nay</span>
+                    </div>
+
+                    <div class="flex flex-col md:flex-row md:items-center justify-between gap-3 pt-1">
+                        <div class="flex items-center space-x-2 text-xs">
+                            <span class="px-2.5 py-1 bg-slate-100 text-slate-700 font-semibold rounded-lg">Toa 1: Ngồi mềm</span>
+                            <span class="px-2.5 py-1 bg-slate-100 text-slate-700 font-semibold rounded-lg">Toa 2: Khoang 6</span>
+                            <span class="px-2.5 py-1 bg-slate-100 text-slate-700 font-semibold rounded-lg">Toa 3: Khoang 4 VIP</span>
+                        </div>
+                        <div class="flex items-center space-x-4">
+                            <div class="text-right">
+                                <span class="text-[10px] text-slate-400 block">Giá vé từ</span>
+                                <span class="text-xl font-extrabold text-sky-700">${train.basePrice.toLocaleString('vi-VN')} VNĐ</span>
+                            </div>
+                            <button onclick="selectTrainForSeats('${train.id}')" class="px-6 py-2.5 bg-sky-600 hover:bg-sky-700 text-white font-extrabold rounded-xl shadow-md transition">
+                                Chọn Toa & Chỗ
+                            </button>
+                        </div>
+                    </div>
+                `;
+                listContainer.appendChild(fullCard);
+            });
+        }
+
+        // -------------------------------------------------------------
+        // LIVE TRAIN TRACKER & ETA ENGINE (XÁC ĐỊNH TÀU BAO H TỚI BẾN)
+        // -------------------------------------------------------------
+        const TRAIN_STATIONS_MASTER = [
+            { name: 'Ga Hà Nội (HNO)', km: 0, timeOffsetMinutes: 0 },
+            { name: 'Ga Phủ Lý (PLY)', km: 56, timeOffsetMinutes: 55 },
+            { name: 'Ga Nam Định (NDI)', km: 87, timeOffsetMinutes: 90 },
+            { name: 'Ga Thanh Hóa (THA)', km: 137, timeOffsetMinutes: 160 },
+            { name: 'Ga Vinh (VII)', km: 319, timeOffsetMinutes: 340 },
+            { name: 'Ga Đà Nẵng (DAN)', km: 791, timeOffsetMinutes: 920 },
+            { name: 'Ga Nha Trang (NTR)', km: 1315, timeOffsetMinutes: 1450 },
+            { name: 'Ga Sài Gòn (SGO)', km: 1726, timeOffsetMinutes: 1815 }
+        ];
+
+        function updateLiveTracker() {
+            const trainId = document.getElementById('tracker-train-select').value;
+            
+            // Simulate progression based on current time of day or random realism
+            const now = new Date();
+            const minutesElapsedToday = (now.getHours() * 60) + now.getMinutes();
+            const totalTripMinutes = 1815; // ~30 hours
+            
+            // Calculate progress percentage (mocked loop for demo liveliness)
+            let progressRatio = (minutesElapsedToday % 720) / 720; // cycles every 12 hours
+            if (progressRatio < 0.05) progressRatio = 0.35; // default realistic position
+
+            const currentKm = Math.round(progressRatio * 1726);
+            const speed = 76 + Math.floor(Math.random() * 8); // 76-83 km/h
+            const distanceLeft = 1726 - currentKm;
+            const hoursLeft = (distanceLeft / speed).toFixed(1);
+
+            // Compute ETA time
+            const etaDate = new Date(now.getTime() + (hoursLeft * 3600 * 1000));
+            const etaStr = etaDate.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }) + ' (' + etaDate.toLocaleDateString('vi-VN') + ')';
+
+            document.getElementById('tracker-current-location').textContent = `Km số ${currentKm} (Khu vực miền Trung)`;
+            document.getElementById('tracker-eta-time').textContent = etaStr;
+            document.getElementById('tracker-speed').textContent = `${speed} km/h`;
+            document.getElementById('tracker-distance-left').textContent = `${distanceLeft} km`;
+
+            const percentageInt = Math.round(progressRatio * 100);
+            document.getElementById('tracker-progress-percentage').textContent = `Tiến độ: ${percentageInt}%`;
+            document.getElementById('tracker-progress-bar-fill').style.width = `${percentageInt}%`;
+            document.getElementById('tracker-train-icon-marker').style.left = `${percentageInt}%`;
+
+            // Render Stations Timeline
+            const timelineContainer = document.getElementById('tracker-stations-timeline');
+            timelineContainer.innerHTML = '';
+
+            TRAIN_STATIONS_MASTER.forEach(st => {
+                const stationRatio = st.km / 1726;
+                let statusBadge = '';
+                let rowBg = 'bg-white border-slate-200';
+
+                if (stationRatio < progressRatio) {
+                    statusBadge = '<span class="px-2 py-0.5 bg-emerald-100 text-emerald-700 font-bold text-[10px] rounded-full"><i class="fa-solid fa-check mr-1"></i> Đã đi qua</span>';
+                    rowBg = 'bg-slate-50/60 border-slate-100 text-slate-500';
+                } else if (Math.abs(stationRatio - progressRatio) < 0.08) {
+                    statusBadge = '<span class="px-2.5 py-1 bg-amber-400 text-slate-950 font-extrabold text-[10px] rounded-full animate-pulse"><i class="fa-solid fa-train"></i> Đang ghé ga</span>';
+                    rowBg = 'bg-sky-50 border-sky-300 ring-1 ring-sky-400/30 text-sky-900 font-bold';
+                } else {
+                    statusBadge = '<span class="px-2 py-0.5 bg-slate-100 text-slate-600 font-bold text-[10px] rounded-full">Sắp tới</span>';
+                }
+
+                const row = document.createElement('div');
+                row.className = `p-3.5 rounded-xl border flex items-center justify-between text-xs transition ${rowBg}`;
+                row.innerHTML = `
+                    <div class="flex items-center space-x-3">
+                        <div class="w-8 h-8 rounded-lg bg-sky-100 text-sky-700 flex items-center justify-center font-bold text-xs">
+                            <i class="fa-solid fa-location-dot"></i>
+                        </div>
+                        <div>
+                            <span class="block font-bold">${st.name}</span>
+                            <span class="text-[10px] opacity-75">Cột mốc Km ${st.km} • Thời gian dự kiến +${Math.round(st.timeOffsetMinutes / 60)}h</span>
+                        </div>
+                    </div>
+                    <div>${statusBadge}</div>
+                `;
+                timelineContainer.appendChild(row);
+            });
+        }
+
+        // VISUAL SEAT MAP & REALTIME FIRESTORE SYNC
+        // -------------------------------------------------------------
+        window.selectTrainForSeats = (trainId) => {
+            selectedTrain = TRAINS_DATABASE.find(t => t.id === trainId);
+            selectedCarriageIndex = 0;
+            selectedSeats = [];
+
+            // Update Header Text
+            document.getElementById('seat-view-train-code').textContent = selectedTrain.id;
+            document.getElementById('seat-view-route').textContent = `${currentSearchData.from} ➔ ${currentSearchData.to}`;
+            document.getElementById('seat-view-time').textContent = `Khởi hành: ${selectedTrain.departTime}, Ngày: ${currentSearchData.date}`;
+
+            // Switch UI view
+            document.getElementById('search-tab').classList.add('hidden');
+            document.getElementById('seat-selection-view').classList.remove('hidden');
+
+            startHoldTimer();
+            renderCarriageTabs();
+            subscribeCarriageSeatsRealtime();
+        };
+
+        window.backToSearchResults = () => {
+            document.getElementById('seat-selection-view').classList.add('hidden');
+            document.getElementById('search-tab').classList.remove('hidden');
+            clearInterval(activeHoldTimer);
+        };
+
+        function renderCarriageTabs() {
+            const container = document.getElementById('carriage-selector-list');
+            container.innerHTML = '';
+
+            selectedTrain.carriages.forEach((c, index) => {
+                const isActive = index === selectedCarriageIndex;
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.onclick = () => {
+                    selectedCarriageIndex = index;
+                    renderCarriageTabs();
+                    renderSeatMap();
+                };
+                btn.className = `p-3 rounded-xl border text-left transition flex items-center justify-between ${
+                    isActive ? 'carriage-active border-sky-600 ring-2 ring-sky-500/20' : 'border-slate-200 hover:border-sky-300'
+                }`;
+
+                btn.innerHTML = `
+                    <div>
+                        <span class="block text-xs font-extrabold text-slate-800">${c.name}</span>
+                        <span class="block text-[10px] text-slate-500">${c.totalSeats} chỗ • Giá nhân: x${c.priceMultiplier}</span>
+                    </div>
+                    <i class="fa-solid fa-chevron-right text-xs ${isActive ? 'text-sky-600' : 'text-slate-300'}"></i>
+                `;
+                container.appendChild(btn);
+            });
+        }
+
+        // Firestore Realtime Seat Subscription (RULE 1 & RULE 2 Compliant)
+        function subscribeCarriageSeatsRealtime() {
+            const currentCarriage = selectedTrain.carriages[selectedCarriageIndex];
+            const seatRef = doc(db, 'artifacts', appId, 'public', 'data', `seats_${selectedTrain.id}_${currentCarriage.id}`);
+
+            onSnapshot(seatRef, (snap) => {
+                if (snap.exists()) {
+                    liveSeatStates = snap.data().soldSeats || {};
+                } else {
+                    liveSeatStates = {};
+                }
+                renderSeatMap();
+            }, (error) => {
+                console.error("Firestore Seat Subscription Error:", error);
+                renderSeatMap(); // Fallback render
+            });
+        }
+
+        function renderSeatMap() {
+            const container = document.getElementById('seat-map-grid');
+            container.innerHTML = '';
+
+            const carriage = selectedTrain.carriages[selectedCarriageIndex];
+            const unitPrice = Math.round(selectedTrain.basePrice * carriage.priceMultiplier);
+
+            document.getElementById('carriage-capacity-text').textContent = `${carriage.name} (Giá vé: ${unitPrice.toLocaleString('vi-VN')}đ)`;
+
+            if (carriage.type === 'SEAT') {
+                // Render Seating Layout (Left 2 - Aisle - Right 2)
+                const grid = document.createElement('div');
+                grid.className = "grid grid-cols-5 gap-3 min-w-[500px] max-w-xl mx-auto p-4 bg-slate-50 rounded-2xl border border-slate-200";
+
+                for (let i = 1; i <= carriage.totalSeats; i++) {
+                    // Check if aisle gap slot (col 3)
+                    if ((i - 1) % 4 === 2 && (i - 1) !== 0) {
+                        const aisle = document.createElement('div');
+                        aisle.className = "flex items-center justify-center text-[10px] text-slate-300 font-bold tracking-widest uppercase select-none";
+                        aisle.textContent = "Lối Đi";
+                        grid.appendChild(aisle);
+                    }
+
+                    const seatId = `${selectedTrain.id}-${carriage.id}-S${i}`;
+                    const isSold = liveSeatStates[seatId] === true;
+                    const isSelected = selectedSeats.some(s => s.id === seatId);
+                    const isPriority = i <= 4; // Seats 1-4 priority
+
+                    const seatBtn = document.createElement('button');
+                    seatBtn.type = 'button';
+                    seatBtn.disabled = isSold;
+                    
+                    let bgClasses = 'bg-emerald-50 border-emerald-400 text-emerald-800 hover:bg-emerald-100';
+                    if (isSold) {
+                        bgClasses = 'bg-rose-100 border-rose-300 text-rose-500 cursor-not-allowed';
+                    } else if (isSelected) {
+                        bgClasses = 'bg-amber-400 border-amber-500 text-slate-950 font-bold shadow-md transform scale-105';
+                    } else if (isPriority) {
+                        bgClasses = 'bg-purple-50 border-purple-300 text-purple-700 hover:bg-purple-100';
+                    }
+
+                    seatBtn.className = `h-14 rounded-xl border-2 flex flex-col items-center justify-center transition relative group ${bgClasses}`;
+                    seatBtn.onclick = () => toggleSeatSelection(seatId, i, unitPrice, carriage.name, 'Ghế Ngồi Mềm');
+
+                    // Tooltip
+                    const isWindow = (i % 4 === 1 || i % 4 === 0);
+                    const tooltipText = isSold 
+                        ? 'Ghế này đã được bán' 
+                        : `${isWindow ? '🪟 Cạnh cửa sổ ngắm cảnh' : '🚶 Cạnh lối đi tiện lợi'} • 🔌 Có ổ cắm điện USB`;
+
+                    seatBtn.innerHTML = `
+                        <i class="fa-solid ${isSold ? 'fa-lock' : isPriority ? 'fa-heart text-purple-500' : 'fa-couch'} text-sm"></i>
+                        <span class="text-xs font-bold mt-0.5">${i}</span>
+                        <div class="absolute bottom-full mb-2 hidden group-hover:block w-36 bg-slate-900 text-white text-[10px] p-2 rounded-lg shadow-xl z-20 pointer-events-none text-center">
+                            ${tooltipText}
+                        </div>
+                    `;
+                    grid.appendChild(seatBtn);
+                }
+                container.appendChild(grid);
+
+            } else {
+                // Render Sleeper Bunk Layout (Khoang 4 or Khoang 6)
+                const compartmentsCount = carriage.type === 'BED6' ? 3 : 3;
+                const bedsPerComp = carriage.type === 'BED6' ? 6 : 4;
+
+                const compGrid = document.createElement('div');
+                compGrid.className = "grid grid-cols-1 md:grid-cols-3 gap-4";
+
+                let currentBedNumber = 1;
+
+                for (let c = 1; c <= compartmentsCount; c++) {
+                    const compBox = document.createElement('div');
+                    compBox.className = "bg-slate-50 p-4 rounded-2xl border border-slate-200 space-y-3";
+                    compBox.innerHTML = `<h5 class="text-xs font-bold text-slate-500 uppercase border-b pb-1">Khoang ${c}</h5>`;
+
+                    const bedsContainer = document.createElement('div');
+                    bedsContainer.className = "grid grid-cols-2 gap-2";
+
+                    for (let b = 1; b <= bedsPerComp; b++) {
+                        const bedNum = currentBedNumber++;
+                        const seatId = `${selectedTrain.id}-${carriage.id}-B${bedNum}`;
+                        const isSold = liveSeatStates[seatId] === true;
+                        const isSelected = selectedSeats.some(s => s.id === seatId);
+
+                        let tierLabel = carriage.type === 'BED6' 
+                            ? (b <= 2 ? 'Tầng 1' : b <= 4 ? 'Tầng 2' : 'Tầng 3')
+                            : (b <= 2 ? 'Tầng 1 (VIP)' : 'Tầng 2');
+
+                        let bgClasses = 'bg-emerald-50 border-emerald-400 text-emerald-800 hover:bg-emerald-100';
+                        if (isSold) bgClasses = 'bg-rose-100 border-rose-300 text-rose-500 cursor-not-allowed';
+                        if (isSelected) bgClasses = 'bg-amber-400 border-amber-500 text-slate-950 font-bold scale-105';
+
+                        const bedBtn = document.createElement('button');
+                        bedBtn.type = 'button';
+                        bedBtn.disabled = isSold;
+                        bedBtn.className = `p-2.5 rounded-xl border-2 flex flex-col items-center justify-center transition relative group ${bgClasses}`;
+                        bedBtn.onclick = () => toggleSeatSelection(seatId, bedNum, unitPrice, carriage.name, `Giường Nằm (${tierLabel})`);
+
+                        bedBtn.innerHTML = `
+                            <i class="fa-solid ${isSold ? 'fa-lock' : 'fa-bed'} text-xs"></i>
+                            <span class="text-xs font-bold">G${bedNum}</span>
+                            <span class="text-[9px] opacity-75">${tierLabel}</span>
+                        `;
+                        bedsContainer.appendChild(bedBtn);
+                    }
+                    compBox.appendChild(bedsContainer);
+                    compGrid.appendChild(compBox);
+                }
+                container.appendChild(compGrid);
+            }
+        }
+
+        function toggleSeatSelection(id, number, price, carriageName, type) {
+            const index = selectedSeats.findIndex(s => s.id === id);
+            if (index > -1) {
+                selectedSeats.splice(index, 1);
+            } else {
+                if (selectedSeats.length >= 6) {
+                    Swal.fire('Giới hạn', 'Bạn chỉ được đặt tối đa 6 chỗ trong 1 lần giao dịch.', 'warning');
+                    return;
+                }
+                selectedSeats.push({ id, number, price, carriageName, type });
+            }
+            updateBookingSummaryUI();
+            renderSeatMap();
+        }
+
+        function updateBookingSummaryUI() {
+            const seatsText = document.getElementById('selected-seats-list');
+            const totalPriceText = document.getElementById('selected-total-price');
+            const checkoutBtn = document.getElementById('btn-proceed-checkout');
+
+            if (selectedSeats.length === 0) {
+                seatsText.textContent = "Chưa chọn ghế nào";
+                totalPriceText.textContent = "0 VNĐ";
+                checkoutBtn.disabled = true;
+            } else {
+                const names = selectedSeats.map(s => `Ghế ${s.number}`).join(', ');
+                const total = selectedSeats.reduce((acc, curr) => acc + curr.price, 0);
+                seatsText.textContent = `${names} (${selectedSeats.length} chỗ)`;
+                totalPriceText.textContent = `${total.toLocaleString('vi-VN')} VNĐ`;
+                checkoutBtn.disabled = false;
+            }
+        }
+
+        function startHoldTimer() {
+            clearInterval(activeHoldTimer);
+            let duration = 600; // 10 minutes hold
+            const timerEl = document.getElementById('hold-timer');
+
+            activeHoldTimer = setInterval(() => {
+                const minutes = Math.floor(duration / 60);
+                const seconds = duration % 60;
+                timerEl.textContent = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+
+                if (--duration < 0) {
+                    clearInterval(activeHoldTimer);
+                    Swal.fire('Hết thời gian giữ ghế', 'Phiên chọn ghế của bạn đã hết hạn, vui lòng chọn lại.', 'warning');
+                    backToSearchResults();
+                }
+            }, 1000);
+        }
+
+        // -------------------------------------------------------------
+        // CHECKOUT & VIETQR DYNAMIC PAYMENT
+        // -------------------------------------------------------------
+        window.goToCheckout = () => {
+            if (selectedSeats.length === 0) return;
+
+            document.getElementById('seat-selection-view').classList.add('hidden');
+            document.getElementById('checkout-tab').classList.remove('hidden');
+
+            renderPassengerForms();
+            renderCheckoutSummary();
+            generateDynamicVietQR();
+        };
+
+        window.backToSeatSelection = () => {
+            document.getElementById('checkout-tab').classList.add('hidden');
+            document.getElementById('seat-selection-view').classList.remove('hidden');
+        };
+
+        function renderPassengerForms() {
+            const container = document.getElementById('passengers-form-container');
+            container.innerHTML = '';
+
+            const defaultName = currentUser && currentUser.displayName ? currentUser.displayName : '';
+            const defaultEmail = currentUser && currentUser.email ? currentUser.email : '';
+
+            document.getElementById('contact-email').value = defaultEmail;
+
+            selectedSeats.forEach((seat, idx) => {
+                const card = document.createElement('div');
+                card.className = "bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-3";
+                card.innerHTML = `
+                    <div class="flex items-center justify-between text-xs font-bold text-sky-700">
+                        <span>Hành khách ${idx + 1} (${seat.carriageName} - Chỗ ${seat.number})</span>
+                        <span class="text-slate-500 font-normal">${seat.type}</span>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-xs text-slate-500 mb-1">Họ và tên hành khách</label>
+                            <input type="text" id="passenger-name-${idx}" value="${idx === 0 ? defaultName : ''}" required class="w-full px-3 py-2 border rounded-lg text-sm bg-white focus:ring-2 focus:ring-sky-500 outline-none" placeholder="Nguyễn Văn A">
+                        </div>
+                        <div>
+                            <label class="block text-xs text-slate-500 mb-1">Số CCCD / CMND / Hộ chiếu</label>
+                            <input type="text" id="passenger-id-${idx}" required class="w-full px-3 py-2 border rounded-lg text-sm bg-white focus:ring-2 focus:ring-sky-500 outline-none" placeholder="001200000000">
+                        </div>
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        function renderCheckoutSummary() {
+            const container = document.getElementById('checkout-summary-details');
+            const totalPriceEl = document.getElementById('checkout-final-price');
+
+            const total = selectedSeats.reduce((acc, curr) => acc + curr.price, 0);
+
+            container.innerHTML = `
+                <div class="flex justify-between"><span>Tàu / Chuyến:</span><strong class="text-slate-800">${selectedTrain.name} (${selectedTrain.id})</strong></div>
+                <div class="flex justify-between"><span>Tuyến:</span><strong class="text-slate-800">${currentSearchData.from} ➔ ${currentSearchData.to}</strong></div>
+                <div class="flex justify-between"><span>Ngày khởi hành:</span><strong class="text-slate-800">${currentSearchData.date} (${selectedTrain.departTime})</strong></div>
+                <div class="flex justify-between"><span>Số lượng chỗ:</span><strong class="text-slate-800">${selectedSeats.length} chỗ</strong></div>
+                <div class="flex justify-between"><span>Bảo hiểm hành khách:</span><strong class="text-emerald-600">Đã bao gồm</strong></div>
+            `;
+
+            totalPriceEl.textContent = `${total.toLocaleString('vi-VN')} VNĐ`;
+        }
+
+        function generateDynamicVietQR() {
+            const memo = `RE${Math.floor(100000 + Math.random() * 900000)}`;
+            document.getElementById('qr-memo').textContent = memo;
+
+            const total = selectedSeats.reduce((acc, curr) => acc + curr.price, 0);
+            const qrCanvasContainer = document.getElementById('qrcode-canvas');
+            qrCanvasContainer.innerHTML = '';
+
+            // Generate VietQR standard string
+            const vietQRPayload = `https://img.vietqr.io/image/MB-999988889999-compact2.png?amount=${total}&addInfo=${memo}&accountName=RAILEXPRESS`;
+
+            const img = document.createElement('img');
+            img.src = vietQRPayload;
+            img.alt = "Mã QR Thanh toán";
+            img.className = "w-48 h-48 rounded-xl shadow-sm border border-slate-100";
+            qrCanvasContainer.appendChild(img);
+        }
+
+        window.updatePaymentView = () => {
+            const selectedMethod = document.querySelector('input[name="payment"]:checked').value;
+            const vietqrBox = document.getElementById('vietqr-container');
+            if (selectedMethod === 'VIETQR') {
+                vietqrBox.classList.remove('hidden');
+            } else {
+                vietqrBox.classList.add('hidden');
+            }
+        };
+
+        // -------------------------------------------------------------
+        // TICKET ISSUANCE & FIRESTORE REALTIME WRITE
+        // -------------------------------------------------------------
+        window.confirmPaymentAndIssueTicket = async () => {
+            if (!currentUser) {
+                Swal.fire('Yêu cầu đăng nhập', 'Vui lòng đăng nhập để lưu trữ vé điện tử!', 'info');
+                openAuthModal('login');
+                return;
+            }
+
+            Swal.fire({
+                title: 'Đang xử lý thanh toán...',
+                text: 'Hệ thống đang đồng bộ trạng thái vé lên Firebase Firestore',
+                allowOutsideClick: false,
+                didOpen: () => { Swal.showLoading(); }
+            });
+
+            try {
+                const total = selectedSeats.reduce((acc, curr) => acc + curr.price, 0);
+                const ticketId = `TK-${Math.floor(100000 + Math.random() * 900000)}`;
+
+                const ticketData = {
+                    ticketId,
+                    userId: currentUser.uid,
+                    userEmail: currentUser.email || 'hanhkhach@railexpress.vn',
+                    trainId: selectedTrain.id,
+                    trainName: selectedTrain.name,
+                    from: currentSearchData.from,
+                    to: currentSearchData.to,
+                    departDate: currentSearchData.date,
+                    departTime: selectedTrain.departTime,
+                    seats: selectedSeats,
+                    totalPrice: total,
+                    status: 'LIVE', // LIVE / PAST / CANCELLED
+                    createdAt: new Date().toISOString()
+                };
+
+                // 1. Save Ticket to Private User Firestore Collection (RULE 1)
+                const userTicketRef = collection(db, 'artifacts', appId, 'users', currentUser.uid, 'bookings');
+                await addDoc(userTicketRef, ticketData);
+
+                // 2. Lock Seats in Public Seat Realtime State Collection (RULE 1)
+                const carriage = selectedTrain.carriages[selectedCarriageIndex];
+                const seatRef = doc(db, 'artifacts', appId, 'public', 'data', `seats_${selectedTrain.id}_${carriage.id}`);
+                
+                const updatedSold = { ...liveSeatStates };
+                selectedSeats.forEach(s => {
+                    updatedSold[s.id] = true;
+                });
+
+                await setDoc(seatRef, { soldSeats: updatedSold }, { merge: true });
+
+                clearInterval(activeHoldTimer);
+
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Đặt Vé Thành Công!',
+                    text: `Mã vé ${ticketId} đã được lưu vào ví Vé điện tử của bạn.`,
+                    confirmButtonText: 'Xem vé ngay'
+                }).then(() => {
+                    switchTab('tickets-tab');
+                });
+
+            } catch (error) {
+                console.error("Payment & Firestore Error:", error);
+                Swal.fire('Lỗi', 'Không thể hoàn tất giao dịch: ' + error.message, 'error');
+            }
+        };
+
+        // -------------------------------------------------------------
+        // MY TICKETS & HISTORY MANAGEMENT
+        // -------------------------------------------------------------
+        function subscribeUserBookings() {
+            if (!currentUser) return;
+
+            // RULE 1 & RULE 2 compliant query
+            const bookingsRef = collection(db, 'artifacts', appId, 'users', currentUser.uid, 'bookings');
+
+            onSnapshot(bookingsRef, (snap) => {
+                userBookings = [];
+                snap.forEach(docSnap => {
+                    userBookings.push({ docId: docSnap.id, ...docSnap.data() });
+                });
+
+                renderMyTicketsUI();
+                renderHistoryUI();
+            }, (err) => {
+                console.error("Bookings Sync Error:", err);
+            });
+        }
+
+        function renderMyTicketsUI() {
+            const container = document.getElementById('my-tickets-list');
+            const badgeCount = document.getElementById('badge-ticket-count');
+            container.innerHTML = '';
+
+            const activeTickets = userBookings.filter(b => b.status === 'LIVE');
+
+            if (activeTickets.length > 0) {
+                badgeCount.textContent = activeTickets.length;
+                badgeCount.classList.remove('hidden');
+            } else {
+                badgeCount.classList.add('hidden');
+            }
+
+            if (activeTickets.length === 0) {
+                container.innerHTML = `
+                    <div class="col-span-2 text-center py-12 bg-white rounded-2xl border border-dashed border-slate-300">
+                        <i class="fa-solid fa-ticket text-4xl text-slate-300 mb-3 block"></i>
+                        <h4 class="text-base font-bold text-slate-700">Chưa có vé điện tử nào</h4>
+                        <p class="text-xs text-slate-400 mt-1">Hãy thực hiện tìm chuyến và đặt vé ngay hôm nay.</p>
+                        <button onclick="switchTab('search-tab')" class="mt-4 px-4 py-2 bg-sky-600 text-white rounded-xl text-xs font-bold shadow">
+                            Đặt vé mới
+                        </button>
+                    </div>
+                `;
+                return;
+            }
+
+            activeTickets.forEach(ticket => {
+                const seatsStr = ticket.seats.map(s => `${s.carriageName} - Chỗ ${s.number}`).join(', ');
+
+                const card = document.createElement('div');
+                card.className = "bg-white rounded-2xl border border-slate-200 shadow-md p-6 space-y-4 relative overflow-hidden";
+                card.innerHTML = `
+                    <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+                        <div class="flex items-center space-x-2">
+                            <span class="px-2.5 py-1 bg-sky-100 text-sky-800 font-extrabold text-xs rounded-lg">${ticket.trainId}</span>
+                            <span class="text-xs font-bold text-slate-800">${ticket.ticketId}</span>
+                        </div>
+                        <span class="px-2 py-0.5 bg-emerald-100 text-emerald-700 text-[10px] font-bold rounded-full uppercase"><i class="fa-solid fa-circle-check"></i> Hợp lệ</span>
+                    </div>
+
+                    <div class="flex items-center justify-between text-center">
+                        <div class="text-left">
+                            <span class="text-xl font-black text-slate-900">${ticket.from}</span>
+                            <span class="text-xs text-slate-400 block">${ticket.departTime}</span>
+                        </div>
+                        <i class="fa-solid fa-arrow-right text-sky-600 text-sm"></i>
+                        <div class="text-right">
+                            <span class="text-xl font-black text-slate-900">${ticket.to}</span>
+                            <span class="text-xs text-slate-400 block">${ticket.departDate}</span>
+                        </div>
+                    </div>
+
+                    <div class="bg-slate-50 p-3 rounded-xl text-xs text-slate-600 space-y-1">
+                        <div>Vị trí chỗ: <strong class="text-slate-900">${seatsStr}</strong></div>
+                        <div>Hành khách: <strong class="text-slate-900">${ticket.userEmail}</strong></div>
+                    </div>
+
+                    <!-- BOARDING QR CODE CONTAINER -->
+                    <div class="flex items-center justify-between pt-2 border-t border-slate-100">
+                        <div id="ticket-qr-${ticket.ticketId}" class="w-16 h-16 bg-slate-100 rounded-lg p-1 flex items-center justify-center"></div>
+                        <div class="text-right space-y-1">
+                            <button onclick="cancelTicket('${ticket.docId}')" class="px-3 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 text-xs font-bold rounded-lg transition">
+                                <i class="fa-solid fa-ban"></i> Hủy vé trực tuyến
+                            </button>
+                        </div>
+                    </div>
+                `;
+                container.appendChild(card);
+
+                // Render QRCode inside ticket
+                setTimeout(() => {
+                    const qrel = document.getElementById(`ticket-qr-${ticket.ticketId}`);
+                    if (qrel) {
+                        qrel.innerHTML = '';
+                        new QRCode(qrel, {
+                            text: `RAILEXPRESS-VERIFY:${ticket.ticketId}`,
+                            width: 56,
+                            height: 56
+                        });
+                    }
+                }, 100);
+            });
+        }
+
+        function renderHistoryUI() {
+            const tableBody = document.getElementById('history-table-body');
+            tableBody.innerHTML = '';
+
+            document.getElementById('stat-total-trips').textContent = userBookings.length;
+
+            if (userBookings.length === 0) {
+                tableBody.innerHTML = `<tr><td colspan="6" class="text-center py-6 text-slate-400">Chưa có dữ liệu lịch sử chuyến đi</td></tr>`;
+                return;
+            }
+
+            userBookings.forEach(b => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td class="py-3 px-4 font-mono font-bold text-sky-700">${b.ticketId}</td>
+                    <td class="py-3 px-4 font-bold">${b.trainId}</td>
+                    <td class="py-3 px-4">${b.from} ➔ ${b.to}</td>
+                    <td class="py-3 px-4">${b.departDate}</td>
+                    <td class="py-3 px-4">${b.seats ? b.seats.length : 1} chỗ</td>
+                    <td class="py-3 px-4">
+                        <span class="px-2 py-0.5 text-[10px] font-bold rounded-full ${
+                            b.status === 'LIVE' ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700'
+                        }">
+                            ${b.status}
+                        </span>
+                    </td>
+                `;
+                tableBody.appendChild(tr);
+            });
+        }
+
+        window.cancelTicket = async (docId) => {
+            const result = await Swal.fire({
+                title: 'Xác nhận hủy vé?',
+                text: "Vé đã hủy sẽ được hoàn tiền 90% theo quy định của RailExpress.",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#e11d48',
+                confirmButtonText: 'Đồng ý Hủy',
+                cancelButtonText: 'Bỏ qua'
+            });
+
+            if (result.isConfirmed) {
+                try {
+                    const ticketDocRef = doc(db, 'artifacts', appId, 'users', currentUser.uid, 'bookings', docId);
+                    await updateDoc(ticketDocRef, { status: 'CANCELLED' });
+                    Swal.fire('Đã Hủy Vé', 'Vé của bạn đã được hủy thành công.', 'success');
+                } catch (err) {
+                    Swal.fire('Lỗi', err.message, 'error');
+                }
+            }
+        };
+
+        function checkPersonalizedRecommendations() {
+            if (userBookings.length > 0) {
+                const lastTrip = userBookings[0];
+                document.getElementById('user-frequent-route-text').innerHTML = 
+                    `Hệ thống ghi nhận tuyến đường thường đi của bạn: <strong class="text-white">${lastTrip.from} ➔ ${lastTrip.to}</strong>. Đặt lại chỉ với 1-click!`;
+            }
+        }
+
+        window.quickBookFrequent = () => {
+            if (userBookings.length > 0) {
+                const lastTrip = userBookings[0];
+                document.getElementById('search-from').value = lastTrip.from;
+                document.getElementById('search-to').value = lastTrip.to;
+            }
+            handleSearch();
+        };
+
+        // -------------------------------------------------------------
+        // NAVIGATION & UI TAB SWITCHER
+        // -------------------------------------------------------------
+        window.switchTab = (tabId) => {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+            document.getElementById('seat-selection-view').classList.add('hidden');
+            document.getElementById(tabId).classList.remove('hidden');
+
+            if (tabId === 'tracker-tab') {
+                updateLiveTracker();
+            }
+
+            // Reset navigation highlight styling
+            ['search', 'tracker', 'tickets', 'history'].forEach(key => {
+                const navBtn = document.getElementById(`nav-${key}`);
+                if (navBtn) {
+                    if (`${key}-tab` === tabId) {
+                        navBtn.className = "px-4 py-2 rounded-lg text-sm font-semibold text-sky-700 bg-sky-50 transition";
+                    } else {
+                        navBtn.className = "px-4 py-2 rounded-lg text-sm font-semibold text-slate-600 hover:text-sky-700 hover:bg-slate-50 transition";
+                    }
+                }
+            });
+        };
+
+        // Simulated Push Notification ZNS
+        function triggerPushNotification() {
+            setTimeout(() => {
+                const toast = document.getElementById('notification-toast');
+                toast.classList.remove('translate-y-20', 'opacity-0');
+            }, 3000);
+        }
+
+        window.dismissToast = () => {
+            const toast = document.getElementById('notification-toast');
+            toast.classList.add('translate-y-20', 'opacity-0');
+        };
+
+        // WINDOW ONLOAD INITIALIZATION
+        window.onload = function () {
+            initAuth();
+            const todayStr = new Date().toISOString().split('T')[0];
+            document.getElementById('search-date').value = todayStr;
+            renderFlexibleDateBar(todayStr);
+            renderSearchResults();
+            updateLiveTracker();
+            triggerPushNotification();
+        };
+    </script>
+</body>
+</html>
